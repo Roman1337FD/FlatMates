@@ -1,9 +1,24 @@
-const App=()=>{
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import ProfileSetup from './pages/ProfileSetup';
+import Listings from './pages/Listings';
+
+function App() {
   return (
-    <div>
-      <h1>Hello user</h1>
-    </div>
-  )
+    <Router>
+      <div className="min-h-screen bg-slate-50 text-slate-900">
+        <Navbar />
+        <main className="container mx-auto px-4 py-6">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/profile-setup" element={<ProfileSetup />} />
+            <Route path="/listings" element={<Listings />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  );
 }
 
-export default App
+export default App;
