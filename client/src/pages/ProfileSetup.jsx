@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function ProfileSetup() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     gender: 'male',
@@ -24,7 +26,9 @@ function ProfileSetup() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('User Preferences:', formData);
+    localStorage.setItem('userPreferences', JSON.stringify(formData));
+    alert('Preferences saved successfully!');
+    navigate('/listings');
   };
 
   return (
