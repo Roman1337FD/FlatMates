@@ -55,9 +55,12 @@ function ChatBot({ receiverId, receiverName = 'Flatmate' }) {
 
   return (
     <div className="fixed bottom-5 right-5 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
-      
+
       <div className="bg-slate-900 text-white px-4 py-3">
-        <h3 className="font-semibold">Chat with {receiverName}</h3>
+        <h3 className="font-semibold">
+          Chat with {receiverName}
+        </h3>
+
         <p className="text-xs text-slate-300">
           FlatMate Chat
         </p>
@@ -70,7 +73,13 @@ function ChatBot({ receiverId, receiverName = 'Flatmate' }) {
           </p>
         ) : (
           messages.map((message) => {
-            const isMine = message.senderId === senderId;
+            const messageSenderId =
+              typeof message.senderId === 'object'
+                ? message.senderId._id
+                : message.senderId;
+
+            const isMine =
+              String(messageSenderId) === String(senderId);
 
             return (
               <div
@@ -111,7 +120,7 @@ function ChatBot({ receiverId, receiverName = 'Flatmate' }) {
           disabled={loading}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
         >
-          Send
+          {loading ? '...' : 'Send'}
         </button>
       </form>
     </div>

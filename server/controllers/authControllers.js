@@ -41,7 +41,6 @@ export const registerUser = async (req, res) => {
       message: 'Registration successful',
       userId: user._id
     });
-
   } catch (error) {
     console.error('Register Error:', error);
 
@@ -52,8 +51,6 @@ export const registerUser = async (req, res) => {
   }
 };
 
-
-// LOGIN
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -101,7 +98,6 @@ export const loginUser = async (req, res) => {
         profession: user.profession
       }
     });
-
   } catch (error) {
     console.error('Login Error:', error);
 
@@ -120,12 +116,71 @@ export const getUsers = async (req, res) => {
       success: true,
       users
     });
-
   } catch (error) {
     console.error('Get Users Error:', error);
 
     res.status(500).json({
       message: 'Failed to fetch users'
+    });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const {
+      name,
+      gender,
+      profession,
+      targetArea,
+      budgetMin,
+      budgetMax,
+      sleepSchedule,
+      foodPref,
+      smoking,
+      cleanliness,
+      bio
+    } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        name,
+        gender,
+        profession,
+        targetArea,
+        budgetMin,
+        budgetMax,
+        sleepSchedule,
+        foodPref,
+        smoking,
+        cleanliness,
+        bio
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user
+    });
+  } catch (error) {
+    console.error('Profile Update Error:', error);
+
+    res.status(500).json({
+      message: 'Failed to update profile',
+      error: error.message
     });
   }
 };

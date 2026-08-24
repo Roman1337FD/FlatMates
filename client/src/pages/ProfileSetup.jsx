@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function ProfileSetup() {
   const navigate = useNavigate();
 
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
-    name: '',
+    name: localStorage.getItem('userName') || '',
     gender: 'male',
     profession: 'student',
     targetArea: 'Knowledge Park II',
@@ -18,6 +21,23 @@ function ProfileSetup() {
     bio: ''
   });
 
+  useEffect(() => {
+    const savedPref = localStorage.getItem('userPreferences');
+
+    if (savedPref) {
+      try {
+        const preferences = JSON.parse(savedPref);
+
+        setFormData((prev) => ({
+          ...prev,
+          ...preferences
+        }));
+      } catch (error) {
+        console.error('Failed to load preferences:', error);
+      }
+    }
+  }, []);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -25,8 +45,16 @@ function ProfileSetup() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const userId = localStorage.getItem('userId');
+
+    if (!userId) {
+      alert('Please login first.');
+      navigate('/login');
+      return;
+    }
 
     if (Number(formData.budgetMin) <= 0) {
       alert('Minimum budget must be greater than 0');
@@ -38,10 +66,60 @@ function ProfileSetup() {
       return;
     }
 
-    localStorage.setItem('userPreferences', JSON.stringify(formData));
+    try {
+      setLoading(true);
 
-    alert('Preferences saved successfully!');
-    navigate('/listings');
+      const profileData = {
+        name: formData.name,
+        gender: formData.gender,
+        profession: formData.profession,
+        targetArea: formData.targetArea,
+        budgetMin: Number(formData.budgetMin),
+        budgetMax: Number(formData.budgetMax),
+        sleepSchedule: formData.sleepSchedule,
+        foodPref: formData.foodPref,
+        smoking: formData.smoking,
+        cleanliness: Number(formData.cleanliness),
+        bio: formData.bio
+      };
+
+      const response = await axios.put(
+        `http://localhost:5000/api/auth/profile/${userId}`,
+        profileData
+      );
+
+      if (response.data.success) {
+        const updatedUser = response.data.user;
+
+        localStorage.setItem(
+          'userPreferences',
+          JSON.stringify(profileData)
+        );
+
+        localStorage.setItem(
+          'userName',
+          updatedUser.name
+        );
+
+        localStorage.setItem(
+          'userEmail',
+          updatedUser.email
+        );
+
+        alert('Preferences saved successfully!');
+
+        navigate('/profile');
+      }
+    } catch (error) {
+      console.error('Profile Update Error:', error);
+
+      alert(
+        error.response?.data?.message ||
+        'Failed to save preferences.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,7 +136,6 @@ function ProfileSetup() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Full Name */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1">
             Full Name
@@ -75,7 +152,6 @@ function ProfileSetup() {
           />
         </div>
 
-        {/* Gender + Profession */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           <div>
@@ -115,7 +191,6 @@ function ProfileSetup() {
 
         </div>
 
-        {/* Target Area */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1">
             Target Area (Greater Noida)
@@ -135,7 +210,6 @@ function ProfileSetup() {
           </select>
         </div>
 
-        {/* Budget */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           <div>
@@ -170,7 +244,6 @@ function ProfileSetup() {
 
         </div>
 
-        {/* Lifestyle */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           <div>
@@ -226,7 +299,6 @@ function ProfileSetup() {
 
         </div>
 
-        {/* Cleanliness */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-2">
             Cleanliness Level: {formData.cleanliness}/5
@@ -248,7 +320,6 @@ function ProfileSetup() {
           </div>
         </div>
 
-        {/* Bio */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1">
             Short Bio / Preferences
@@ -264,12 +335,12 @@ function ProfileSetup() {
           ></textarea>
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
-          className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
+          disabled={loading}
+          className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md disabled:opacity-50"
         >
-          Save & Find Flatmates
+          {loading ? 'Saving...' : 'Save & Update Profile'}
         </button>
 
       </form>
