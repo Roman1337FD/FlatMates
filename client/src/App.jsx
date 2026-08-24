@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProfileSetup from './pages/ProfileSetup';
+import Profile from './pages/Profile';
 import Listings from './pages/Listings';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/listings" element={<Listings />} />
           </Routes>
         </main>

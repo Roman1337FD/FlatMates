@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 
 function Register() {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ function Register() {
     confirmPassword: ''
   });
 
+  const [loading, setLoading] = useState(false);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -18,7 +21,7 @@ function Register() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
@@ -31,17 +34,32 @@ function Register() {
       return;
     }
 
-    localStorage.setItem(
-      'registeredUser',
-      JSON.stringify({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password
-      })
-    );
+    try {
+      setLoading(true);
 
-    alert('Registration successful!');
-    navigate('/login');
+      const response = await axios.post(
+        'http://localhost:5000/api/auth/register',
+        {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        }
+      );
+
+      if (response.data.success) {
+        alert('Registration successful!');
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Registration Error:', error);
+
+      alert(
+        error.response?.data?.message ||
+        'Registration failed'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -124,22 +142,22 @@ function Register() {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
           >
-            Create Account
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
 
         </form>
 
         <p className="text-center text-sm text-slate-500 mt-6">
           Already have an account?{' '}
-          <button
-            type="button"
-            onClick={() => navigate('/login')}
+          <Link
+            to="/login"
             className="text-indigo-600 font-semibold hover:underline"
           >
             Login
-          </button>
+          </Link>
         </p>
 
       </div>

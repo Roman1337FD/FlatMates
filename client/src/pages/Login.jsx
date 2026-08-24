@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 
 function Login() {
   const navigate = useNavigate();
@@ -9,6 +10,8 @@ function Login() {
     password: ''
   });
 
+  const [loading, setLoading] = useState(false);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -16,7 +19,7 @@ function Login() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.email || !formData.password) {
@@ -24,16 +27,60 @@ function Login() {
       return;
     }
 
-    localStorage.setItem('userEmail', formData.email);
+    try {
+      setLoading(true);
 
-    alert('Login successful!');
-    navigate('/profile-setup');
+      const response = await axios.post(
+        'http://localhost:5000/api/auth/login',
+        {
+          email: formData.email,
+          password: formData.password
+        }
+      );
+
+      if (response.data.success) {
+        // Save logged-in user's information
+        localStorage.setItem(
+          'userId',
+          response.data.user.id
+        );
+
+        localStorage.setItem(
+          'userEmail',
+          response.data.user.email
+        );
+
+        localStorage.setItem(
+          'userName',
+          response.data.user.name
+        );
+
+        localStorage.setItem(
+          'token',
+          response.data.token
+        );
+
+        alert('Login successful!');
+
+        navigate('/profile-setup');
+      }
+    } catch (error) {
+      console.error('Login Error:', error);
+
+      alert(
+        error.response?.data?.message ||
+        'Login failed. Please check your email and password.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
+
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-md">
-        
+
         <h2 className="text-3xl font-bold text-center text-slate-800">
           Welcome Back
         </h2>
@@ -78,18 +125,23 @@ function Login() {
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
           >
-            Login
+            {loading ? 'Logging in...' : 'Login'}
           </button>
 
         </form>
 
         <p className="text-center text-sm text-slate-500 mt-6">
           Don't have an account?{' '}
-          <span className="text-indigo-600 font-semibold cursor-pointer">
+
+          <Link
+            to="/register"
+            className="text-indigo-600 font-semibold hover:underline"
+          >
             Create Account
-          </span>
+          </Link>
         </p>
 
       </div>
