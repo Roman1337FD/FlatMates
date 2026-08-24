@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 function ProfileSetup() {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: '',
     gender: 'male',
@@ -26,21 +27,43 @@ function ProfileSetup() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (Number(formData.budgetMin) <= 0) {
+      alert('Minimum budget must be greater than 0');
+      return;
+    }
+
+    if (Number(formData.budgetMax) <= Number(formData.budgetMin)) {
+      alert('Maximum budget must be greater than minimum budget');
+      return;
+    }
+
     localStorage.setItem('userPreferences', JSON.stringify(formData));
+
     alert('Preferences saved successfully!');
     navigate('/listings');
   };
 
   return (
     <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200 my-6">
-      <h2 className="text-2xl font-bold text-slate-800 mb-2">Set Your Preferences</h2>
+
+      <h2 className="text-2xl font-bold text-slate-800 mb-2">
+        Set Your Preferences
+      </h2>
+
       <p className="text-slate-500 mb-6 text-sm">
-        Fill in your lifestyle habits and stay details. Our AI uses this to calculate match accuracy.
+        Fill in your lifestyle habits and stay details. Our AI uses this
+        to calculate match accuracy.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+
+        {/* Full Name */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1">Full Name</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-1">
+            Full Name
+          </label>
+
           <input
             type="text"
             name="name"
@@ -52,9 +75,14 @@ function ProfileSetup() {
           />
         </div>
 
+        {/* Gender + Profession */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Gender</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Gender
+            </label>
+
             <select
               name="gender"
               value={formData.gender}
@@ -68,28 +96,57 @@ function ProfileSetup() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Target Area (Greater Noida)</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Profession
+            </label>
+
             <select
-              name="targetArea"
-              value={formData.targetArea}
+              name="profession"
+              value={formData.profession}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             >
-              <option value="Knowledge Park II">Knowledge Park II</option>
-              <option value="Knowledge Park III">Knowledge Park III</option>
-              <option value="Pari Chowk">Pari Chowk</option>
-              <option value="Alpha 1">Alpha 1</option>
-              <option value="Delta 3">Delta 3</option>
+              <option value="student">Student</option>
+              <option value="working-professional">
+                Working Professional
+              </option>
             </select>
           </div>
+
         </div>
 
+        {/* Target Area */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1">
+            Target Area (Greater Noida)
+          </label>
+
+          <select
+            name="targetArea"
+            value={formData.targetArea}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          >
+            <option value="Knowledge Park II">Knowledge Park II</option>
+            <option value="Knowledge Park III">Knowledge Park III</option>
+            <option value="Pari Chowk">Pari Chowk</option>
+            <option value="Alpha 1">Alpha 1</option>
+            <option value="Delta 3">Delta 3</option>
+          </select>
+        </div>
+
+        {/* Budget */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Min Budget (₹/month)</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Min Budget (₹/month)
+            </label>
+
             <input
               type="number"
               name="budgetMin"
+              min="1"
               value={formData.budgetMin}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -97,20 +154,30 @@ function ProfileSetup() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Max Budget (₹/month)</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Max Budget (₹/month)
+            </label>
+
             <input
               type="number"
               name="budgetMax"
+              min="1"
               value={formData.budgetMax}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
             />
           </div>
+
         </div>
 
+        {/* Lifestyle */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Sleep Schedule</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Sleep Schedule
+            </label>
+
             <select
               name="sleepSchedule"
               value={formData.sleepSchedule}
@@ -124,7 +191,10 @@ function ProfileSetup() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Food Preference</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Food Preference
+            </label>
+
             <select
               name="foodPref"
               value={formData.foodPref}
@@ -138,7 +208,10 @@ function ProfileSetup() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Smoking Habit</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Smoking Habit
+            </label>
+
             <select
               name="smoking"
               value={formData.smoking}
@@ -150,10 +223,37 @@ function ProfileSetup() {
               <option value="occasionally">Occasionally</option>
             </select>
           </div>
+
         </div>
 
+        {/* Cleanliness */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1">Short Bio / Preferences</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Cleanliness Level: {formData.cleanliness}/5
+          </label>
+
+          <input
+            type="range"
+            name="cleanliness"
+            min="1"
+            max="5"
+            value={formData.cleanliness}
+            onChange={handleChange}
+            className="w-full accent-indigo-600"
+          />
+
+          <div className="flex justify-between text-xs text-slate-500 mt-1">
+            <span>Relaxed</span>
+            <span>Very Clean</span>
+          </div>
+        </div>
+
+        {/* Bio */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1">
+            Short Bio / Preferences
+          </label>
+
           <textarea
             name="bio"
             rows="3"
@@ -164,12 +264,14 @@ function ProfileSetup() {
           ></textarea>
         </div>
 
+        {/* Submit */}
         <button
           type="submit"
           className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
         >
           Save & Find Flatmates
         </button>
+
       </form>
     </div>
   );
