@@ -12,6 +12,7 @@ import matchRoutes from './routes/matchRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 dotenv.config();
 
@@ -73,7 +74,30 @@ app.set('io', io);
 app.disable('x-powered-by');
 
 app.use(
-  helmet()
+  helmet({
+    crossOriginResourcePolicy: {
+      policy: 'cross-origin'
+    },
+
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+
+        imgSrc: [
+          "'self'",
+          'data:',
+          'blob:',
+          'http://localhost:5000'
+        ],
+
+        connectSrc: [
+          "'self'",
+          'http://localhost:5000',
+          'ws://localhost:5000'
+        ]
+      }
+    }
+  })
 );
 
 app.use(
@@ -92,6 +116,11 @@ app.use(
   express.json({
     limit: '10kb'
   })
+);
+
+app.use(
+  '/uploads',
+  express.static('uploads')
 );
 
 app.use(
@@ -122,6 +151,11 @@ app.use(
 app.use(
   '/api/notifications',
   notificationRoutes
+);
+
+app.use(
+  '/api/upload',
+  uploadRoutes
 );
 
 app.get(
@@ -178,6 +212,26 @@ app.use(
       return res.status(413).json({
         message:
           'Request body is too large'
+      });
+    }
+
+    if (
+      err.message ===
+      'Only JPG, PNG, WEBP and GIF images are allowed'
+    ) {
+      return res.status(400).json({
+        message:
+          err.message
+      });
+    }
+
+    if (
+      err.code ===
+      'LIMIT_FILE_SIZE'
+    ) {
+      return res.status(413).json({
+        message:
+          'Image must be 5MB or less'
       });
     }
 

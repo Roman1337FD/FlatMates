@@ -1097,7 +1097,7 @@ export const getUsers = async (
         }
       })
         .select(
-          'name email gender profession targetArea budgetMin budgetMax sleepSchedule foodPref smoking cleanliness bio'
+          'name email profileImage gender profession targetArea budgetMin budgetMax sleepSchedule foodPref smoking cleanliness bio'
         )
         .lean();
 
@@ -1169,7 +1169,7 @@ export const getPublicProfile =
           req.params.userId
         )
           .select(
-            'name gender profession targetArea budgetMin budgetMax sleepSchedule foodPref smoking cleanliness bio'
+            'name profileImage gender profession targetArea budgetMin budgetMax sleepSchedule foodPref smoking cleanliness bio'
           )
           .lean();
 
@@ -1212,6 +1212,7 @@ export const updateProfile =
 
       const allowedFields = [
         'name',
+        'profileImage',
         'gender',
         'profession',
         'targetArea',
@@ -1235,6 +1236,38 @@ export const updateProfile =
         ) {
           updates[field] =
             req.body[field];
+        }
+      }
+
+      if (
+        updates.profileImage !==
+        undefined
+      ) {
+        updates.profileImage =
+          String(
+            updates.profileImage
+          ).trim();
+
+        if (
+          updates.profileImage.length >
+          2000
+        ) {
+          return res.status(400).json({
+            message:
+              'Profile image URL is too long'
+          });
+        }
+
+        if (
+          updates.profileImage &&
+          !/^https?:\/\/.+/i.test(
+            updates.profileImage
+          )
+        ) {
+          return res.status(400).json({
+            message:
+              'Profile image must be a valid URL'
+          });
         }
       }
 
