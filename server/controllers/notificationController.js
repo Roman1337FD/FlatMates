@@ -58,15 +58,16 @@ export const markNotificationRead = async (req, res) => {
   try {
     const { notificationId } = req.params;
 
-    const notification = await Notification.findByIdAndUpdate(
-      notificationId,
-      {
-        isRead: true
-      },
-      {
-        new: true
-      }
-    );
+    const notification =
+      await Notification.findByIdAndUpdate(
+        notificationId,
+        {
+          isRead: true
+        },
+        {
+          new: true
+        }
+      );
 
     if (!notification) {
       return res.status(404).json({
@@ -87,7 +88,63 @@ export const markNotificationRead = async (req, res) => {
   }
 };
 
-export const markAllNotificationsRead = async (req, res) => {
+export const markChatNotificationsRead = async (
+  req,
+  res
+) => {
+  try {
+    const { userId, senderId } = req.body;
+
+    if (!userId || !senderId) {
+      return res.status(400).json({
+        message: 'User ID and sender ID are required'
+      });
+    }
+
+    const result = await Notification.updateMany(
+      {
+        receiverId: userId,
+        senderId: senderId,
+        isRead: false
+      },
+      {
+        isRead: true
+      }
+    );
+
+    const io = req.app.get('io');
+
+    if (io) {
+      io.to(`user_${userId}`).emit(
+        'notifications_read',
+        {
+          userId,
+          senderId
+        }
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Chat notifications marked as read',
+      updatedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error(
+      'Mark Chat Notifications Error:',
+      error
+    );
+
+    res.status(500).json({
+      message: 'Failed to mark chat notifications'
+    });
+  }
+};
+
+export const markAllNotificationsRead = async (
+  req,
+  res
+) => {
   try {
     const { userId } = req.body;
 
@@ -112,7 +169,10 @@ export const markAllNotificationsRead = async (req, res) => {
       message: 'All notifications marked as read'
     });
   } catch (error) {
-    console.error('Mark All Notifications Error:', error);
+    console.error(
+      'Mark All Notifications Error:',
+      error
+    );
 
     res.status(500).json({
       message: 'Failed to mark notifications'

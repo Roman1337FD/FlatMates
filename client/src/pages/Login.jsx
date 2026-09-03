@@ -39,7 +39,7 @@ function Login() {
       );
 
       if (response.data.success) {
-        // Save logged-in user's information
+       
         localStorage.setItem(
           'userId',
           response.data.user.id
@@ -62,7 +62,7 @@ function Login() {
 
         alert('Login successful!');
 
-        navigate('/profile-setup');
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Login Error:', error);

@@ -4,10 +4,12 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
 import ProfileSetup from './pages/ProfileSetup';
 import Profile from './pages/Profile';
 import Listings from './pages/Listings';
 import Chat from './pages/Chat';
+import Privacy from './pages/Privacy';
 
 function App() {
   return (
@@ -17,11 +19,30 @@ function App() {
 
         <main className="container mx-auto px-4 py-6">
           <Routes>
-            <Route path="/" element={<Home />} />
 
-            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={<Home />}
+            />
 
-            <Route path="/register" element={<Register />} />
+            <Route
+              path="/login"
+              element={<Login />}
+            />
+
+            <Route
+              path="/register"
+              element={<Register />}
+            />
+
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
 
             <Route
               path="/profile-setup"
@@ -51,6 +72,15 @@ function App() {
             />
 
             <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <Chat />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/chat/:userId"
               element={
                 <ProtectedRoute>
@@ -58,6 +88,15 @@ function App() {
                 </ProtectedRoute>
               }
             />
+          <Route
+            path="/privacy"
+            element={
+             <ProtectedRoute>
+              <Privacy />
+             </ProtectedRoute>
+  }
+/>
+
           </Routes>
         </main>
       </div>
