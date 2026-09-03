@@ -1,25 +1,31 @@
+import mongoose from 'mongoose';
 import Notification from '../models/notification.js';
 
 export const getNotifications = async (req, res) => {
   try {
-    const { userId } = req.query;
+    const userId = req.userId;
 
     if (!userId) {
-      return res.status(400).json({
-        message: 'User ID is required'
+      return res.status(401).json({
+        message: 'Authentication required'
       });
     }
 
-    const notifications = await Notification.find({
-      receiverId: userId
-    })
-      .populate('senderId', 'name email')
-      .sort({ createdAt: -1 })
-      .limit(30);
+    const notifications =
+      await Notification.find({
+        receiverId: userId
+      })
+        .populate('senderId', 'name')
+        .sort({ createdAt: -1 })
+        .limit(30)
+        .lean();
 
     res.json(notifications);
   } catch (error) {
-    console.error('Get Notifications Error:', error);
+    console.error(
+      'Get Notifications Error:',
+      error
+    );
 
     res.status(500).json({
       message: 'Failed to load notifications'
@@ -29,24 +35,28 @@ export const getNotifications = async (req, res) => {
 
 export const getUnreadCount = async (req, res) => {
   try {
-    const { userId } = req.query;
+    const userId = req.userId;
 
     if (!userId) {
-      return res.status(400).json({
-        message: 'User ID is required'
+      return res.status(401).json({
+        message: 'Authentication required'
       });
     }
 
-    const count = await Notification.countDocuments({
-      receiverId: userId,
-      isRead: false
-    });
+    const count =
+      await Notification.countDocuments({
+        receiverId: userId,
+        isRead: false
+      });
 
     res.json({
       count
     });
   } catch (error) {
-    console.error('Unread Count Error:', error);
+    console.error(
+      'Unread Count Error:',
+      error
+    );
 
     res.status(500).json({
       message: 'Failed to get unread count'
@@ -54,20 +64,45 @@ export const getUnreadCount = async (req, res) => {
   }
 };
 
-export const markNotificationRead = async (req, res) => {
+export const markNotificationRead = async (
+  req,
+  res
+) => {
   try {
     const { notificationId } = req.params;
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: 'Authentication required'
+      });
+    }
+
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        notificationId
+      )
+    ) {
+      return res.status(400).json({
+        message: 'Invalid notification ID'
+      });
+    }
 
     const notification =
-      await Notification.findByIdAndUpdate(
-        notificationId,
+      await Notification.findOneAndUpdate(
+        {
+          _id: notificationId,
+          receiverId: userId
+        },
         {
           isRead: true
         },
         {
           new: true
         }
-      );
+      )
+        .populate('senderId', 'name')
+        .lean();
 
     if (!notification) {
       return res.status(404).json({
@@ -80,10 +115,14 @@ export const markNotificationRead = async (req, res) => {
       notification
     });
   } catch (error) {
-    console.error('Mark Notification Error:', error);
+    console.error(
+      'Mark Notification Error:',
+      error
+    );
 
     res.status(500).json({
-      message: 'Failed to mark notification'
+      message:
+        'Failed to mark notification'
     });
   }
 };
@@ -93,24 +132,36 @@ export const markChatNotificationsRead = async (
   res
 ) => {
   try {
-    const { userId, senderId } = req.body;
+    const { senderId } = req.body;
+    const userId = req.userId;
 
     if (!userId || !senderId) {
       return res.status(400).json({
-        message: 'User ID and sender ID are required'
+        message: 'Sender ID is required'
       });
     }
 
-    const result = await Notification.updateMany(
-      {
-        receiverId: userId,
-        senderId: senderId,
-        isRead: false
-      },
-      {
-        isRead: true
-      }
-    );
+    if (
+      !mongoose.Types.ObjectId.isValid(
+        senderId
+      )
+    ) {
+      return res.status(400).json({
+        message: 'Invalid sender ID'
+      });
+    }
+
+    const result =
+      await Notification.updateMany(
+        {
+          receiverId: userId,
+          senderId,
+          isRead: false
+        },
+        {
+          isRead: true
+        }
+      );
 
     const io = req.app.get('io');
 
@@ -126,8 +177,10 @@ export const markChatNotificationsRead = async (
 
     res.json({
       success: true,
-      message: 'Chat notifications marked as read',
-      updatedCount: result.modifiedCount
+      message:
+        'Chat notifications marked as read',
+      updatedCount:
+        result.modifiedCount
     });
   } catch (error) {
     console.error(
@@ -136,7 +189,8 @@ export const markChatNotificationsRead = async (
     );
 
     res.status(500).json({
-      message: 'Failed to mark chat notifications'
+      message:
+        'Failed to mark chat notifications'
     });
   }
 };
@@ -146,27 +200,31 @@ export const markAllNotificationsRead = async (
   res
 ) => {
   try {
-    const { userId } = req.body;
+    const userId = req.userId;
 
     if (!userId) {
-      return res.status(400).json({
-        message: 'User ID is required'
+      return res.status(401).json({
+        message: 'Authentication required'
       });
     }
 
-    await Notification.updateMany(
-      {
-        receiverId: userId,
-        isRead: false
-      },
-      {
-        isRead: true
-      }
-    );
+    const result =
+      await Notification.updateMany(
+        {
+          receiverId: userId,
+          isRead: false
+        },
+        {
+          isRead: true
+        }
+      );
 
     res.json({
       success: true,
-      message: 'All notifications marked as read'
+      message:
+        'All notifications marked as read',
+      updatedCount:
+        result.modifiedCount
     });
   } catch (error) {
     console.error(
@@ -175,7 +233,8 @@ export const markAllNotificationsRead = async (
     );
 
     res.status(500).json({
-      message: 'Failed to mark notifications'
+      message:
+        'Failed to mark notifications'
     });
   }
 };

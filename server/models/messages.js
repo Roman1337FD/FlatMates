@@ -7,15 +7,19 @@ const messageSchema = new mongoose.Schema(
       ref: 'User',
       required: true
     },
+
     receiverId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
+
     text: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
+      minlength: 1,
+      maxlength: 1000
     }
   },
   {
@@ -23,6 +27,10 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
-const Message = mongoose.model('Message', messageSchema);
+const Message =
+  mongoose.model(
+    'Message',
+    messageSchema
+  );
 
 export default Message;

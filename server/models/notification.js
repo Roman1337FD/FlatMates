@@ -7,19 +7,27 @@ const notificationSchema = new mongoose.Schema(
       ref: 'User',
       required: true
     },
+
     senderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
+
     type: {
       type: String,
+      enum: ['message'],
       default: 'message'
     },
+
     message: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 200
     },
+
     isRead: {
       type: Boolean,
       default: false
@@ -30,9 +38,10 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
-const Notification = mongoose.model(
-  'Notification',
-  notificationSchema
-);
+const Notification =
+  mongoose.model(
+    'Notification',
+    notificationSchema
+  );
 
 export default Notification;

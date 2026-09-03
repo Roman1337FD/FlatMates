@@ -1,186 +1,252 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { io } from 'socket.io-client';
+import api from '../api/axios';
 
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    !!localStorage.getItem('userId')
-  );
+  const [isLoggedIn, setIsLoggedIn] =
+    useState(!!localStorage.getItem('token'));
 
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showAccount, setShowAccount] = useState(false);
+  const [notifications, setNotifications] =
+    useState([]);
 
-  const checkLogin = () => {
-    const currentUserId = localStorage.getItem('userId');
+  const [unreadCount, setUnreadCount] =
+    useState(0);
 
-    setIsLoggedIn(!!currentUserId);
+  const [showNotifications, setShowNotifications] =
+    useState(false);
 
-    return currentUserId;
-  };
+  const notificationRef =
+    useRef(null);
 
-  const fetchNotifications = async () => {
-    const currentUserId = localStorage.getItem('userId');
+  const socketRef =
+    useRef(null);
 
-    if (!currentUserId) {
-      setNotifications([]);
-      setUnreadCount(0);
-      return;
-    }
-
-    try {
-      const response = await axios.get(
-        `http://localhost:5000/api/notifications?userId=${currentUserId}`
-      );
-
-      const data = response.data || [];
-
-      setNotifications(data);
-
-      const unread = data.filter(
-        (notification) => !notification.isRead
-      ).length;
-
-      setUnreadCount(unread);
-    } catch (error) {
-      console.error(
-        'Failed to load notifications:',
-        error
-      );
-    }
-  };
-
-  const clearChatNotifications = async (senderId) => {
-    const currentUserId = localStorage.getItem('userId');
-
-    if (!currentUserId || !senderId) {
-      return;
-    }
-
-    try {
-      await axios.put(
-        'http://localhost:5000/api/notifications/chat/read',
-        {
-          userId: currentUserId,
-          senderId
-        }
-      );
-
-      setNotifications((prev) => {
-        return prev.filter((notification) => {
-          const notificationSenderId =
-            typeof notification.senderId === 'object'
-              ? notification.senderId?._id
-              : notification.senderId;
-
-          return (
-            String(notificationSenderId) !==
-            String(senderId)
-          );
-        });
-      });
-
-      await fetchNotifications();
-    } catch (error) {
-      console.error(
-        'Failed to clear chat notifications:',
-        error
-      );
-    }
-  };
+  const socketUrl =
+    import.meta.env.VITE_SOCKET_URL ||
+    'http://localhost:5000';
 
   useEffect(() => {
-    const currentUserId = checkLogin();
+    const checkAuth = () => {
+      setIsLoggedIn(
+        !!localStorage.getItem('token')
+      );
+    };
 
-    if (!currentUserId) {
+    checkAuth();
+
+    window.addEventListener(
+      'storage',
+      checkAuth
+    );
+
+    window.addEventListener(
+      'auth-changed',
+      checkAuth
+    );
+
+    return () => {
+      window.removeEventListener(
+        'storage',
+        checkAuth
+      );
+
+      window.removeEventListener(
+        'auth-changed',
+        checkAuth
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
       setNotifications([]);
       setUnreadCount(0);
+
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+
       return;
     }
+
+    const token =
+      localStorage.getItem('token');
+
+    if (!token) {
+      setIsLoggedIn(false);
+      return;
+    }
+
+    const fetchNotifications =
+      async () => {
+        try {
+          const [
+            notificationsResponse,
+            countResponse
+          ] = await Promise.all([
+            api.get('/notifications'),
+            api.get(
+              '/notifications/unread-count'
+            )
+          ]);
+
+          const allNotifications =
+            Array.isArray(
+              notificationsResponse.data
+            )
+              ? notificationsResponse.data
+              : [];
+
+          const unreadNotifications =
+            allNotifications.filter(
+              (notification) =>
+                notification &&
+                notification.isRead === false
+            );
+
+          setNotifications(
+            unreadNotifications
+          );
+
+          setUnreadCount(
+            Number(
+              countResponse.data?.count || 0
+            )
+          );
+        } catch (error) {
+          console.error(
+            'Failed to load notifications:',
+            error
+          );
+        }
+      };
 
     fetchNotifications();
-  }, [location.pathname]);
 
-  useEffect(() => {
-    const currentUserId = localStorage.getItem('userId');
+    const handleNotificationsUpdated =
+      (event) => {
+        const senderId =
+          event.detail?.senderId;
 
-    if (!currentUserId) {
-      return;
-    }
+        if (senderId) {
+          setNotifications((prev) => {
+            const remaining =
+              prev.filter(
+                (notification) => {
+                  const notificationSenderId =
+                    typeof notification.senderId ===
+                    'object'
+                      ? notification.senderId?._id
+                      : notification.senderId;
 
-    const pathParts = location.pathname.split('/');
+                  return (
+                    String(
+                      notificationSenderId
+                    ) !==
+                    String(senderId)
+                  );
+                }
+              );
 
-    if (
-      pathParts[1] === 'chat' &&
-      pathParts[2]
-    ) {
-      const chatUserId = pathParts[2];
+            const removedCount =
+              prev.length -
+              remaining.length;
 
-      clearChatNotifications(chatUserId);
-    }
-  }, [location.pathname]);
+            if (removedCount > 0) {
+              setUnreadCount(
+                (count) =>
+                  Math.max(
+                    0,
+                    count - removedCount
+                  )
+              );
+            }
 
-  useEffect(() => {
-    const currentUserId = localStorage.getItem('userId');
+            return remaining;
+          });
+        } else {
+          fetchNotifications();
+        }
+      };
 
-    if (!currentUserId) {
-      return;
-    }
+    window.addEventListener(
+      'notifications-updated',
+      handleNotificationsUpdated
+    );
 
-    const socket = io('http://localhost:5000');
+    const socket = io(
+      socketUrl,
+      {
+        auth: {
+          token
+        }
+      }
+    );
 
-    socket.emit('join_user', currentUserId);
+    socketRef.current = socket;
+
+    socket.on(
+      'connect',
+      () => {
+        console.log(
+          'Navbar socket connected:',
+          socket.id
+        );
+      }
+    );
+
+    socket.on(
+      'connect_error',
+      (error) => {
+        console.error(
+          'Navbar socket error:',
+          error.message
+        );
+      }
+    );
 
     socket.on(
       'new_notification',
       (notification) => {
-        if (
-          String(notification.receiverId) !==
-          String(currentUserId)
-        ) {
-          return;
-        }
-
-        const senderId =
-          typeof notification.senderId === 'object'
-            ? notification.senderId?._id
-            : notification.senderId;
-
-        const pathParts = location.pathname.split('/');
-        const currentChatUserId =
-          pathParts[1] === 'chat'
-            ? pathParts[2]
-            : null;
-
-        if (
-          currentChatUserId &&
-          String(currentChatUserId) ===
-            String(senderId)
-        ) {
+        if (!notification) {
           return;
         }
 
         setNotifications((prev) => {
-          const exists = prev.some(
-            (item) => {
-              if (
-                notification._id &&
-                item._id
-              ) {
-                return (
-                  String(item._id) ===
-                  String(notification._id)
-                );
-              }
+          const notificationSenderId =
+            typeof notification.senderId ===
+            'object'
+              ? notification.senderId?._id
+              : notification.senderId;
 
-              return false;
-            }
-          );
+          const exists =
+            prev.some(
+              (item) =>
+                String(item._id) ===
+                  String(
+                    notification._id
+                  ) ||
+                (
+                  String(
+                    typeof item.senderId ===
+                    'object'
+                      ? item.senderId?._id
+                      : item.senderId
+                  ) ===
+                  String(
+                    notificationSenderId
+                  ) &&
+                  item.message ===
+                    notification.message &&
+                  item.createdAt ===
+                    notification.createdAt
+                )
+            );
 
           if (exists) {
             return prev;
@@ -192,374 +258,481 @@ function Navbar() {
               isRead: false
             },
             ...prev
-          ];
+          ].slice(0, 30);
         });
 
-        setUnreadCount((prev) => prev + 1);
+        setUnreadCount(
+          (prev) => prev + 1
+        );
       }
     );
 
     socket.on(
       'notifications_read',
       (data) => {
-        if (
-          String(data.userId) !==
-          String(currentUserId)
-        ) {
+        const senderId =
+          data?.senderId;
+
+        if (!senderId) {
+          fetchNotifications();
           return;
         }
 
-        const senderId = data.senderId;
-
         setNotifications((prev) => {
-          const remaining = prev.filter(
-            (notification) => {
-              const notificationSenderId =
-                typeof notification.senderId === 'object'
-                  ? notification.senderId?._id
-                  : notification.senderId;
+          const remaining =
+            prev.filter(
+              (notification) => {
+                const notificationSenderId =
+                  typeof notification.senderId ===
+                  'object'
+                    ? notification.senderId?._id
+                    : notification.senderId;
 
-              return (
-                String(notificationSenderId) !==
-                String(senderId)
-              );
-            }
-          );
+                return (
+                  String(
+                    notificationSenderId
+                  ) !==
+                  String(senderId)
+                );
+              }
+            );
+
+          const removedCount =
+            prev.length -
+            remaining.length;
+
+          if (removedCount > 0) {
+            setUnreadCount(
+              (count) =>
+                Math.max(
+                  0,
+                  count - removedCount
+                )
+            );
+          }
 
           return remaining;
         });
-
-        fetchNotifications();
       }
-    );
-
-    return () => {
-      socket.off('new_notification');
-      socket.off('notifications_read');
-      socket.disconnect();
-    };
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      checkLogin();
-      fetchNotifications();
-    };
-
-    window.addEventListener(
-      'storage',
-      handleStorageChange
     );
 
     return () => {
       window.removeEventListener(
-        'storage',
-        handleStorageChange
+        'notifications-updated',
+        handleNotificationsUpdated
+      );
+
+      socket.off('connect');
+      socket.off('connect_error');
+      socket.off('new_notification');
+      socket.off('notifications_read');
+
+      socket.disconnect();
+
+      if (
+        socketRef.current === socket
+      ) {
+        socketRef.current = null;
+      }
+    };
+  }, [
+    isLoggedIn,
+    socketUrl
+  ]);
+
+  useEffect(() => {
+    const handleOutsideClick = (
+      event
+    ) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(
+          event.target
+        )
+      ) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener(
+      'mousedown',
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleOutsideClick
       );
     };
   }, []);
 
-  const handleNotificationClick = async (
-    notification
-  ) => {
-    try {
-      const senderId =
-        typeof notification.senderId === 'object'
-          ? notification.senderId?._id
-          : notification.senderId;
+  const markNotificationRead =
+    async (notificationId) => {
+      try {
+        await api.put(
+          `/notifications/${encodeURIComponent(
+            notificationId
+          )}/read`
+        );
 
-      setShowNotifications(false);
+        setNotifications((prev) =>
+          prev.filter(
+            (notification) =>
+              String(notification._id) !==
+              String(notificationId)
+          )
+        );
 
-      if (senderId) {
-        await clearChatNotifications(senderId);
-
-        navigate(`/chat/${senderId}`);
+        setUnreadCount(
+          (prev) =>
+            Math.max(0, prev - 1)
+        );
+      } catch (error) {
+        console.error(
+          'Failed to mark notification:',
+          error
+        );
       }
+    };
+
+  const markAllRead = async () => {
+    try {
+      await api.put(
+        '/notifications/read-all'
+      );
+
+      setNotifications([]);
+
+      setUnreadCount(0);
     } catch (error) {
       console.error(
-        'Failed to open notification:',
+        'Failed to mark all notifications:',
         error
       );
     }
   };
 
+  const handleNotificationClick =
+    async (notification) => {
+      if (!notification) {
+        return;
+      }
+
+      if (
+        !notification.isRead &&
+        notification._id
+      ) {
+        await markNotificationRead(
+          notification._id
+        );
+      }
+
+      setShowNotifications(false);
+
+      if (
+        notification.senderId
+      ) {
+        const senderId =
+          typeof notification.senderId ===
+          'object'
+            ? notification.senderId?._id
+            : notification.senderId;
+
+        if (senderId) {
+          navigate(
+            `/chat/${senderId}`
+          );
+        }
+      }
+    };
+
   const handleLogout = () => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
     localStorage.removeItem('userId');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userName');
     localStorage.removeItem('token');
     localStorage.removeItem('userPreferences');
 
-    setIsLoggedIn(false);
     setNotifications([]);
     setUnreadCount(0);
     setShowNotifications(false);
-    setShowAccount(false);
+    setIsLoggedIn(false);
 
-    navigate('/login');
+    window.dispatchEvent(
+      new Event('auth-changed')
+    );
+
+    navigate('/login', {
+      replace: true
+    });
   };
 
-  const closeMenus = () => {
-    setShowNotifications(false);
-    setShowAccount(false);
+  const isActive = (path) => {
+    return location.pathname === path;
   };
 
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <Link
-          to="/"
-          onClick={closeMenus}
-          className="text-xl font-bold text-indigo-600 tracking-tight"
-        >
-          FlatMate<span className="text-slate-800">.GN</span>
-        </Link>
-
-        <div className="flex items-center gap-2 md:gap-5">
+        <div className="h-16 flex items-center justify-between">
 
           <Link
-            to="/"
-            className="hidden md:block font-medium text-slate-600 hover:text-indigo-600 transition-colors"
+            to={
+              isLoggedIn
+                ? '/dashboard'
+                : '/'
+            }
+            className="text-xl font-bold text-indigo-600"
           >
-            Home
+            FlatMate.GN
           </Link>
 
-          <Link
-            to="/listings"
-            className="hidden md:block font-medium text-slate-600 hover:text-indigo-600 transition-colors"
-          >
-            Find Flatmates
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-4">
 
-          {isLoggedIn ? (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowNotifications(
-                    !showNotifications
-                  );
-                  setShowAccount(false);
-                }}
-                className="relative w-10 h-10 rounded-full flex items-center justify-center text-xl text-slate-600 hover:bg-slate-100 hover:text-indigo-600 transition"
-                title="Notifications"
-              >
-                🔔
+            {isLoggedIn ? (
+              <>
 
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[19px] h-[19px] px-1 flex items-center justify-center border-2 border-white">
-                    {unreadCount > 9
-                      ? '9+'
-                      : unreadCount}
+                <Link
+                  to="/dashboard"
+                  className={`hidden sm:block px-3 py-2 rounded-lg text-sm font-medium transition ${
+                    isActive('/dashboard')
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Dashboard
+                </Link>
+
+                <Link
+                  to="/listings"
+                  className={`hidden sm:block px-3 py-2 rounded-lg text-sm font-medium transition ${
+                    isActive('/listings')
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Find Flatmates
+                </Link>
+
+                <Link
+                  to="/chat"
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                    location.pathname.startsWith('/chat')
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <span className="hidden sm:inline">
+                    Messages
                   </span>
-                )}
-              </button>
 
-              {showNotifications && (
-                <div className="absolute right-16 md:right-20 top-14 w-[320px] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50">
+                  <span className="sm:hidden">
+                    💬
+                  </span>
+                </Link>
 
-                  <div className="px-4 py-3 border-b border-slate-200">
-                    <h3 className="font-bold text-slate-800">
-                      Notifications
-                    </h3>
+                <div
+                  ref={notificationRef}
+                  className="relative"
+                >
 
-                    <p className="text-xs text-slate-400 mt-1">
-                      Your latest activity
-                    </p>
-                  </div>
-
-                  <div className="max-h-80 overflow-y-auto">
-
-                    {notifications.length === 0 ? (
-                      <div className="p-6 text-center text-sm text-slate-400">
-                        No notifications
-                      </div>
-                    ) : (
-                      notifications.map(
-                        (notification) => (
-                          <button
-                            key={notification._id}
-                            onClick={() =>
-                              handleNotificationClick(
-                                notification
-                              )
-                            }
-                            className={`w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition ${
-                              !notification.isRead
-                                ? 'bg-indigo-50'
-                                : 'bg-white'
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-
-                              <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-sm">
-                                💬
-                              </div>
-
-                              <div className="flex-1 min-w-0">
-
-                                <div className="font-semibold text-sm text-slate-800">
-                                  {notification
-                                    .senderId?.name ||
-                                    'Flatmate'}
-                                </div>
-
-                                <div className="text-sm text-slate-600 mt-1">
-                                  {notification.message}
-                                </div>
-
-                                <div className="text-xs text-slate-400 mt-1">
-                                  {new Date(
-                                    notification.createdAt
-                                  ).toLocaleString()}
-                                </div>
-
-                              </div>
-
-                              {!notification.isRead && (
-                                <span className="w-2 h-2 bg-indigo-600 rounded-full mt-2"></span>
-                              )}
-
-                            </div>
-                          </button>
-                        )
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowNotifications(
+                        (prev) => !prev
                       )
+                    }
+                    className="relative w-10 h-10 rounded-lg hover:bg-slate-100 flex items-center justify-center text-xl transition"
+                    aria-label="Notifications"
+                  >
+                    🔔
+
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
+                        {unreadCount > 99
+                          ? '99+'
+                          : unreadCount}
+                      </span>
                     )}
+                  </button>
 
-                  </div>
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
+
+                      <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+
+                        <h3 className="font-bold text-slate-800">
+                          Notifications
+                        </h3>
+
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={
+                              markAllRead
+                            }
+                            className="text-xs text-indigo-600 font-semibold hover:underline"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+
+                      </div>
+
+                      <div className="max-h-96 overflow-y-auto">
+
+                        {notifications.length === 0 ? (
+                          <div className="p-8 text-center">
+
+                            <div className="text-3xl mb-2">
+                              🔔
+                            </div>
+
+                            <p className="text-sm font-medium text-slate-700">
+                              No notifications
+                            </p>
+
+                            <p className="text-xs text-slate-400 mt-1">
+                              You're all caught up.
+                            </p>
+
+                          </div>
+                        ) : (
+                          notifications.map(
+                            (notification) => (
+                              <button
+                                key={
+                                  notification._id ||
+                                  `${notification.senderId}-${notification.createdAt}`
+                                }
+                                type="button"
+                                onClick={() =>
+                                  handleNotificationClick(
+                                    notification
+                                  )
+                                }
+                                className="w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition bg-indigo-50/50"
+                              >
+
+                                <div className="flex gap-3">
+
+                                  <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0 font-bold">
+                                    {(
+                                      notification
+                                        .senderId
+                                        ?.name ||
+                                      'F'
+                                    )
+                                      .charAt(0)
+                                      .toUpperCase()}
+                                  </div>
+
+                                  <div className="flex-1 min-w-0">
+
+                                    <p className="text-sm text-slate-700 break-words">
+                                      {notification.message ||
+                                        'You have a new notification.'}
+                                    </p>
+
+                                    <p className="text-xs text-slate-400 mt-1">
+                                      {notification.createdAt
+                                        ? new Date(
+                                            notification.createdAt
+                                          ).toLocaleString(
+                                            [],
+                                            {
+                                              dateStyle:
+                                                'short',
+                                              timeStyle:
+                                                'short'
+                                            }
+                                          )
+                                        : ''}
+                                    </p>
+
+                                  </div>
+
+                                  <span className="w-2 h-2 rounded-full bg-indigo-600 mt-2 flex-shrink-0"></span>
+
+                                </div>
+
+                              </button>
+                            )
+                          )
+                        )}
+
+                      </div>
+
+                    </div>
+                  )}
+
                 </div>
-              )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAccount(false);
-                  setShowNotifications(false);
-                  navigate('/chat');
-                }}
-                className="relative w-10 h-10 rounded-full flex items-center justify-center text-xl text-slate-600 hover:bg-slate-100 hover:text-indigo-600 transition"
-                title="Messages"
-              >
-                💬
-              </button>
+                <Link
+                  to="/profile"
+                  className={`hidden md:block px-3 py-2 rounded-lg text-sm font-medium transition ${
+                    isActive('/profile')
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Profile
+                </Link>
 
-              <div className="relative">
+                <Link
+                  to="/privacy"
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                    isActive('/privacy')
+                      ? 'bg-indigo-50 text-indigo-700'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Privacy & Security
+                </Link>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowAccount(!showAccount);
-                    setShowNotifications(false);
-                  }}
-                  className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold hover:bg-indigo-200 transition"
-                  title="Account"
+                  onClick={
+                    handleLogout
+                  }
+                  className="px-3 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition"
                 >
-                  {(localStorage.getItem(
-                    'userName'
-                  ) || 'U')
-                    .charAt(0)
-                    .toUpperCase()}
+                  Logout
                 </button>
 
-                {showAccount && (
-                  <div className="absolute right-0 top-12 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50">
+              </>
+            ) : (
+              <>
 
-                    <div className="px-4 py-4 bg-slate-50 border-b border-slate-200">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                >
+                  Login
+                </Link>
 
-                      <div className="font-bold text-slate-800">
-                        {localStorage.getItem(
-                          'userName'
-                        ) || 'User'}
-                      </div>
+                <Link
+                  to="/register"
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                >
+                  Register
+                </Link>
 
-                      <div className="text-xs text-slate-500 mt-1 truncate">
-                        {localStorage.getItem(
-                          'userEmail'
-                        ) || ''}
-                      </div>
+              </>
+            )}
 
-                    </div>
-
-                    <div className="p-2">
-
-                      <Link
-                        to="/profile"
-                        onClick={closeMenus}
-                        className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-                      >
-                        👤
-                        <span>My Profile</span>
-                      </Link>
-
-                      <Link
-                        to="/dashboard"
-                        onClick={closeMenus}
-                        className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-                      >
-                        🏠
-                        <span>Dashboard</span>
-                      </Link>
-
-                      <Link
-                        to="/profile-setup"
-                        onClick={closeMenus}
-                        className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-                      >
-                        ⚙️
-                        <span>Preferences</span>
-                      </Link>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          closeMenus();
-                          navigate('/privacy');
-                        }}
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-100 transition"
-                      >
-                        🔒
-                        <span>
-                          Privacy & Security
-                        </span>
-                      </button>
-
-                      <div className="border-t border-slate-100 my-2"></div>
-
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition"
-                      >
-                        🚪
-                        <span>Logout</span>
-                      </button>
-
-                    </div>
-                  </div>
-                )}
-
-              </div>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className="font-medium text-slate-600 hover:text-indigo-600 transition-colors"
-              >
-                Login
-              </Link>
-
-              <Link
-                to="/register"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                Register
-              </Link>
-            </>
-          )}
+          </div>
 
         </div>
+
       </div>
     </nav>
   );

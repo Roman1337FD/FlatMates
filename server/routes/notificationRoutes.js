@@ -8,16 +8,38 @@ import {
   markAllNotificationsRead
 } from '../controllers/notificationController.js';
 
+import protect from '../middleware/authMiddleware.js';
+
 const router = express.Router();
 
-router.get('/', getNotifications);
+router.get(
+  '/',
+  protect,
+  getNotifications
+);
 
-router.get('/unread-count', getUnreadCount);
+router.get(
+  '/unread-count',
+  protect,
+  getUnreadCount
+);
 
-router.put('/chat/read', markChatNotificationsRead);
+router.put(
+  '/chat/read',
+  protect,
+  markChatNotificationsRead
+);
 
-router.put('/read-all', markAllNotificationsRead);
+router.put(
+  '/read-all',
+  protect,
+  markAllNotificationsRead
+);
 
-router.put('/:notificationId/read', markNotificationRead);
+router.put(
+  '/:notificationId/read',
+  protect,
+  markNotificationRead
+);
 
 export default router;

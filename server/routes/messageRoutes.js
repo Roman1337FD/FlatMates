@@ -6,12 +6,26 @@ import {
   getConversations
 } from '../controllers/messageController.js';
 
+import protect from '../middleware/authMiddleware.js';
+
 const router = express.Router();
 
-router.post('/', sendMessage);
+router.post(
+  '/',
+  protect,
+  sendMessage
+);
 
-router.get('/conversations', getConversations);
+router.get(
+  '/conversations',
+  protect,
+  getConversations
+);
 
-router.get('/', getMessages);
+router.get(
+  '/',
+  protect,
+  getMessages
+);
 
 export default router;
