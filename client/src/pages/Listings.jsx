@@ -104,18 +104,29 @@ function createFallbackResult(
 
   return {
     id: target._id,
+
     userId: target._id,
+
     name:
       target.name ||
       'Flatmate',
+
+    profileImage:
+      target.profileImage ||
+      '',
+
     area:
       target.targetArea ||
       'Area not specified',
+
     budget: `${target.budgetMin ?? 0} - ${target.budgetMax ?? 0}`,
+
     matchScore:
       fallbackScore,
+
     summary:
       'AI matching is temporarily unavailable. Compatibility is calculated using your saved preferences.',
+
     pros: [
       currentProfile.targetArea &&
       currentProfile.targetArea ===
@@ -129,6 +140,7 @@ function createFallbackResult(
         ? 'Same food preference'
         : 'Different food preference'
     ],
+
     cons: [
       currentProfile.sleepSchedule !==
       target.sleepSchedule
@@ -251,16 +263,22 @@ function Listings() {
         const currentProfile = {
           targetArea:
             userProfile.targetArea,
+
           budgetMin:
             userProfile.budgetMin,
+
           budgetMax:
             userProfile.budgetMax,
+
           sleepSchedule:
             userProfile.sleepSchedule,
+
           foodPref:
             userProfile.foodPref,
+
           smoking:
             userProfile.smoking,
+
           cleanliness:
             userProfile.cleanliness
         };
@@ -301,6 +319,12 @@ function Listings() {
                   name:
                     target.name ||
                     'Flatmate',
+
+                  profileImage:
+                    typeof target.profileImage ===
+                    'string'
+                      ? target.profileImage
+                      : '',
 
                   area:
                     target.targetArea ||

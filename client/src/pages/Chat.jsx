@@ -278,9 +278,51 @@ function Chat() {
               '/chat/conversations'
             );
 
-          setConversations(
+          const conversationData =
             response.data?.conversations ||
-              []
+            [];
+
+          const enrichedConversations =
+            await Promise.all(
+              conversationData.map(
+                async (
+                  conversation
+                ) => {
+                  try {
+                    const profileResponse =
+                      await api.get(
+                        `/auth/public-profile/${encodeURIComponent(
+                          conversation.userId
+                        )}`
+                      );
+
+                    const profile =
+                      profileResponse.data?.user ||
+                      profileResponse.data;
+
+                    return {
+                      ...conversation,
+                      profileImage:
+                        profile?.profileImage ||
+                        ''
+                    };
+                  } catch (profileError) {
+                    console.error(
+                      `Failed to load profile image for ${conversation.name}:`,
+                      profileError
+                    );
+
+                    return {
+                      ...conversation,
+                      profileImage: ''
+                    };
+                  }
+                }
+              )
+            );
+
+          setConversations(
+            enrichedConversations
           );
         } catch (error) {
           console.error(
@@ -565,14 +607,24 @@ function Chat() {
                   className="w-full flex items-center gap-4 p-4 md:p-5 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition text-left"
                 >
 
-                  <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-lg font-bold flex-shrink-0">
-                    {(
-                      conversation.name ||
-                      'F'
-                    )
-                      .charAt(0)
-                      .toUpperCase()}
-                  </div>
+                  {conversation.profileImage ? (
+                    <img
+                      src={
+                        conversation.profileImage
+                      }
+                      alt={`${conversation.name || 'User'} profile`}
+                      className="w-12 h-12 rounded-full object-cover border border-slate-200 flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-lg font-bold flex-shrink-0">
+                      {(
+                        conversation.name ||
+                        'F'
+                      )
+                        .charAt(0)
+                        .toUpperCase()}
+                    </div>
+                  )}
 
                   <div className="flex-1 min-w-0">
 
@@ -630,11 +682,19 @@ function Chat() {
           ←
         </button>
 
-        <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-bold">
-          {(receiver?.name || 'F')
-            .charAt(0)
-            .toUpperCase()}
-        </div>
+        {receiver?.profileImage ? (
+          <img
+            src={receiver.profileImage}
+            alt={`${receiver.name || 'Flatmate'} profile`}
+            className="w-10 h-10 rounded-full object-cover border border-white/20"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-bold">
+            {(receiver?.name || 'F')
+              .charAt(0)
+              .toUpperCase()}
+          </div>
+        )}
 
         <div>
 

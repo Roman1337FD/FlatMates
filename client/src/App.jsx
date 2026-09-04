@@ -14,6 +14,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ProfileSetup from './pages/ProfileSetup';
 import Profile from './pages/Profile';
+import PublicProfile from './pages/PublicProfile';
 import Listings from './pages/Listings';
 import Chat from './pages/Chat';
 import Dashboard from './pages/Dashboard';
@@ -75,6 +76,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profile/:userId"
+            element={
+              <ProtectedRoute>
+                <PublicProfile />
               </ProtectedRoute>
             }
           />
