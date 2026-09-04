@@ -1,26 +1,75 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+  useEffect,
+  useState
+} from 'react';
+
+import {
+  useNavigate
+} from 'react-router-dom';
+
 import api from '../api/axios';
+
+const GREATER_NOIDA_AREAS = [
+  'Knowledge Park I',
+  'Knowledge Park II',
+  'Knowledge Park III',
+  'Pari Chowk',
+  'Alpha I',
+  'Alpha II',
+  'Beta I',
+  'Beta II',
+  'Gamma I',
+  'Gamma II',
+  'Delta I',
+  'Delta II',
+  'Omega I',
+  'Omega II',
+  'Jagat Farm',
+  'Kasna',
+  'Surajpur',
+  'Jaypee Greens',
+  'Greater Noida West',
+  'Noida Extension',
+  'Gaur City',
+  'Techzone',
+  'Sector 1',
+  'Sector 4',
+  'Sector 10',
+  'Sector 16B',
+  'Sector 137',
+  'Sector 150',
+  'Other'
+];
 
 function ProfileSetup() {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loading, setLoading] =
+    useState(false);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    gender: 'male',
-    profession: 'student',
-    targetArea: 'Knowledge Park II',
-    budgetMin: 5000,
-    budgetMax: 12000,
-    sleepSchedule: 'night-owl',
-    foodPref: 'veg',
-    smoking: 'no',
-    cleanliness: 4,
-    bio: ''
-  });
+  const [loadingProfile, setLoadingProfile] =
+    useState(true);
+
+  const [areaType, setAreaType] =
+    useState('');
+
+  const [customArea, setCustomArea] =
+    useState('');
+
+  const [formData, setFormData] =
+    useState({
+      name: '',
+      gender: '',
+      profession: '',
+      targetArea: '',
+      budgetMin: '',
+      budgetMax: '',
+      sleepSchedule: '',
+      foodPref: '',
+      smoking: '',
+      cleanliness: '',
+      bio: ''
+    });
 
   useEffect(() => {
     const userId =
@@ -33,110 +82,151 @@ function ProfileSetup() {
       navigate('/login', {
         replace: true
       });
+
       return;
     }
 
-    const fetchProfile = async () => {
-      try {
-        setLoadingProfile(true);
+    const fetchProfile =
+      async () => {
+        try {
+          setLoadingProfile(true);
 
-        const response =
-          await api.get(
-            `/auth/profile/${encodeURIComponent(
-              userId
-            )}`
-          );
+          const response =
+            await api.get(
+              `/auth/profile/${encodeURIComponent(
+                userId
+              )}`
+            );
 
-        const user =
-          response.data?.user ||
-          response.data;
+          const user =
+            response.data?.user ||
+            response.data;
 
-        if (!user) {
-          throw new Error(
-            'Profile not found'
-          );
-        }
+          if (!user) {
+            throw new Error(
+              'Profile not found'
+            );
+          }
 
-        setFormData({
-          name: user.name || '',
-          gender:
-            user.gender || 'male',
-          profession:
-            user.profession ||
-            'student',
-          targetArea:
-            user.targetArea ||
-            'Knowledge Park II',
-          budgetMin:
-            user.budgetMin ?? 5000,
-          budgetMax:
-            user.budgetMax ?? 12000,
-          sleepSchedule:
-            user.sleepSchedule ||
-            'night-owl',
-          foodPref:
-            user.foodPref ||
-            'veg',
-          smoking:
-            user.smoking ||
-            'no',
-          cleanliness:
-            user.cleanliness ?? 4,
-          bio:
-            user.bio || ''
-        });
+          const savedArea =
+            user.targetArea || '';
 
-        localStorage.setItem(
-          'userName',
-          user.name || ''
-        );
+          const isKnownArea =
+            GREATER_NOIDA_AREAS.includes(
+              savedArea
+            ) &&
+            savedArea !== 'Other';
 
-        localStorage.setItem(
-          'userEmail',
-          user.email || ''
-        );
-      } catch (error) {
-        console.error(
-          'Failed to load profile:',
-          error
-        );
+          setFormData({
+            name:
+              user.name || '',
 
-        if (
-          error.response?.status ===
-          401
-        ) {
-          localStorage.removeItem(
-            'userId'
-          );
-          localStorage.removeItem(
-            'userEmail'
-          );
-          localStorage.removeItem(
-            'userName'
-          );
-          localStorage.removeItem(
-            'token'
-          );
-          localStorage.removeItem(
-            'userPreferences'
-          );
+            gender:
+              user.gender || '',
 
-          navigate('/login', {
-            replace: true
+            profession:
+              user.profession || '',
+
+            targetArea:
+              savedArea,
+
+            budgetMin:
+              user.budgetMin ??
+              '',
+
+            budgetMax:
+              user.budgetMax ??
+              '',
+
+            sleepSchedule:
+              user.sleepSchedule || '',
+
+            foodPref:
+              user.foodPref || '',
+
+            smoking:
+              user.smoking || '',
+
+            cleanliness:
+              user.cleanliness ??
+              '',
+
+            bio:
+              user.bio || ''
           });
 
-          return;
-        }
+          if (isKnownArea) {
+            setAreaType(savedArea);
+            setCustomArea('');
+          } else if (savedArea) {
+            setAreaType('Other');
+            setCustomArea(
+              savedArea
+            );
+          } else {
+            setAreaType('');
+            setCustomArea('');
+          }
 
-        alert(
-          error.response?.data?.message ||
-          error.message ||
-          'Failed to load profile.'
-        );
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
+          localStorage.setItem(
+            'userName',
+            user.name || ''
+          );
+
+          localStorage.setItem(
+            'userEmail',
+            user.email || ''
+          );
+        } catch (error) {
+          console.error(
+            'Failed to load profile:',
+            error
+          );
+
+          if (
+            error.response?.status ===
+            401
+          ) {
+            localStorage.removeItem(
+              'userId'
+            );
+
+            localStorage.removeItem(
+              'userEmail'
+            );
+
+            localStorage.removeItem(
+              'userName'
+            );
+
+            localStorage.removeItem(
+              'token'
+            );
+
+            localStorage.removeItem(
+              'userPreferences'
+            );
+
+            localStorage.removeItem(
+              'customUserId'
+            );
+
+            navigate('/login', {
+              replace: true
+            });
+
+            return;
+          }
+
+          alert(
+            error.response?.data?.message ||
+            error.message ||
+            'Failed to load profile.'
+          );
+        } finally {
+          setLoadingProfile(false);
+        }
+      };
 
     fetchProfile();
   }, [navigate]);
@@ -149,7 +239,48 @@ function ProfileSetup() {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleAreaChange = (e) => {
+    const value =
+      e.target.value;
+
+    setAreaType(value);
+
+    if (value === 'Other') {
+      setFormData((prev) => ({
+        ...prev,
+        targetArea:
+          customArea.trim()
+      }));
+
+      return;
+    }
+
+    setCustomArea('');
+
+    setFormData((prev) => ({
+      ...prev,
+      targetArea: value
+    }));
+  };
+
+  const handleCustomAreaChange =
+    (e) => {
+      const value =
+        e.target.value;
+
+      setCustomArea(value);
+
+      if (areaType === 'Other') {
+        setFormData((prev) => ({
+          ...prev,
+          targetArea: value
+        }));
+      }
+    };
+
+  const handleSubmit = async (
+    e
+  ) => {
     e.preventDefault();
 
     const userId =
@@ -160,7 +291,9 @@ function ProfileSetup() {
 
     if (!userId || !token) {
       alert('Please login first.');
+
       navigate('/login');
+
       return;
     }
 
@@ -186,7 +319,10 @@ function ProfileSetup() {
       Number(formData.cleanliness);
 
     if (!name) {
-      alert('Name is required');
+      alert(
+        'Name is required'
+      );
+
       return;
     }
 
@@ -194,13 +330,31 @@ function ProfileSetup() {
       alert(
         'Name must be 50 characters or less'
       );
+
+      return;
+    }
+
+    if (!formData.gender) {
+      alert(
+        'Please select your gender'
+      );
+
+      return;
+    }
+
+    if (!formData.profession) {
+      alert(
+        'Please select your profession'
+      );
+
       return;
     }
 
     if (!targetArea) {
       alert(
-        'Preferred area is required'
+        'Please select your preferred area'
       );
+
       return;
     }
 
@@ -208,6 +362,7 @@ function ProfileSetup() {
       alert(
         'Preferred area must be 100 characters or less'
       );
+
       return;
     }
 
@@ -215,16 +370,22 @@ function ProfileSetup() {
       alert(
         'Profession must be 50 characters or less'
       );
+
       return;
     }
 
     if (
-      !Number.isFinite(minBudget) ||
-      !Number.isFinite(maxBudget)
+      !Number.isFinite(
+        minBudget
+      ) ||
+      !Number.isFinite(
+        maxBudget
+      )
     ) {
       alert(
-        'Budget must be valid numbers'
+        'Please enter a valid budget'
       );
+
       return;
     }
 
@@ -235,6 +396,7 @@ function ProfileSetup() {
       alert(
         'Budget cannot be negative'
       );
+
       return;
     }
 
@@ -242,16 +404,45 @@ function ProfileSetup() {
       alert(
         'Minimum budget cannot exceed maximum budget'
       );
+
+      return;
+    }
+
+    if (!formData.sleepSchedule) {
+      alert(
+        'Please select your sleep schedule'
+      );
+
+      return;
+    }
+
+    if (!formData.foodPref) {
+      alert(
+        'Please select your food preference'
+      );
+
+      return;
+    }
+
+    if (!formData.smoking) {
+      alert(
+        'Please select your smoking preference'
+      );
+
       return;
     }
 
     if (
+      !Number.isFinite(
+        cleanliness
+      ) ||
       cleanliness < 1 ||
       cleanliness > 5
     ) {
       alert(
-        'Cleanliness must be between 1 and 5'
+        'Please select your cleanliness level'
       );
+
       return;
     }
 
@@ -259,6 +450,7 @@ function ProfileSetup() {
       alert(
         'About Me must be 500 characters or less'
       );
+
       return;
     }
 
@@ -315,7 +507,9 @@ function ProfileSetup() {
 
       localStorage.setItem(
         'userPreferences',
-        JSON.stringify(profileData)
+        JSON.stringify(
+          profileData
+        )
       );
 
       alert(
@@ -336,17 +530,25 @@ function ProfileSetup() {
         localStorage.removeItem(
           'userId'
         );
+
         localStorage.removeItem(
           'userEmail'
         );
+
         localStorage.removeItem(
           'userName'
         );
+
         localStorage.removeItem(
           'token'
         );
+
         localStorage.removeItem(
           'userPreferences'
+        );
+
+        localStorage.removeItem(
+          'customUserId'
         );
 
         navigate('/login', {
@@ -367,54 +569,69 @@ function ProfileSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50 py-6 sm:py-8 px-4">
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+      <div className="max-w-4xl mx-auto">
 
-          <div className="mb-8">
+        <div className="bg-white rounded-3xl border border-indigo-100 shadow-sm p-5 sm:p-7 md:p-8">
 
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
+          <div className="mb-7">
+
+            <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-600 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide">
+              ⚙️ Preferences
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-3">
               Set Up Your Preferences
             </h1>
 
-            <p className="text-slate-500 mt-2">
-              Tell us about your lifestyle so we can find compatible flatmates.
+            <p className="text-slate-500 mt-2 text-sm sm:text-base">
+              Tell us about your lifestyle so we can find compatible flatmates nearby.
             </p>
 
           </div>
 
           {loadingProfile ? (
-            <div className="py-12 text-center">
+            <div className="py-14 text-center">
 
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-3"></div>
+              <div className="w-10 h-10 mx-auto rounded-full border-4 border-indigo-200 border-t-indigo-500 animate-spin mb-4"></div>
 
-              <p className="text-slate-600 font-medium">
+              <p className="text-slate-700 font-semibold">
                 Loading your profile...
               </p>
 
             </div>
           ) : (
             <form
-              onSubmit={handleSubmit}
+              onSubmit={
+                handleSubmit
+              }
               className="space-y-6"
             >
 
               <div>
 
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-semibold text-slate-700 mb-2"
+                >
                   Name
                 </label>
 
                 <input
+                  id="name"
                   type="text"
                   name="name"
-                  value={formData.name}
-                  onChange={handleChange}
+                  value={
+                    formData.name
+                  }
+                  onChange={
+                    handleChange
+                  }
                   maxLength={50}
                   required
                   autoComplete="name"
-                  className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700"
                 />
 
               </div>
@@ -423,16 +640,28 @@ function ProfileSetup() {
 
                 <div>
 
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="gender"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Gender
                   </label>
 
                   <select
+                    id="gender"
                     name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={
+                      formData.gender
+                    }
+                    onChange={
+                      handleChange
+                    }
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700"
                   >
+
+                    <option value="">
+                      Select gender
+                    </option>
 
                     <option value="male">
                       Male
@@ -452,16 +681,28 @@ function ProfileSetup() {
 
                 <div>
 
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="profession"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Profession
                   </label>
 
                   <select
+                    id="profession"
                     name="profession"
-                    value={formData.profession}
-                    onChange={handleChange}
-                    className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={
+                      formData.profession
+                    }
+                    onChange={
+                      handleChange
+                    }
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700"
                   >
+
+                    <option value="">
+                      Select profession
+                    </option>
 
                     <option value="student">
                       Student
@@ -483,56 +724,127 @@ function ProfileSetup() {
 
               <div>
 
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label
+                  htmlFor="targetArea"
+                  className="block text-sm font-semibold text-slate-700 mb-2"
+                >
                   Preferred Area
                 </label>
 
-                <input
-                  type="text"
-                  name="targetArea"
-                  value={formData.targetArea}
-                  onChange={handleChange}
-                  maxLength={100}
-                  required
-                  className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <select
+                  id="targetArea"
+                  value={
+                    areaType
+                  }
+                  onChange={
+                    handleAreaChange
+                  }
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700"
+                >
+
+                  <option value="">
+                    Select your area
+                  </option>
+
+                  {GREATER_NOIDA_AREAS.map(
+                    (area) => (
+                      <option
+                        key={area}
+                        value={area}
+                      >
+                        {area}
+                      </option>
+                    )
+                  )}
+
+                </select>
+
+                <p className="text-xs text-slate-400 mt-2">
+                  Choose a nearby Greater Noida area or select Other if your location is not listed.
+                </p>
 
               </div>
+
+              {areaType ===
+                'Other' && (
+                <div>
+
+                  <label
+                    htmlFor="customArea"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    Enter Your Location
+                  </label>
+
+                  <input
+                    id="customArea"
+                    type="text"
+                    value={
+                      customArea
+                    }
+                    onChange={
+                      handleCustomAreaChange
+                    }
+                    maxLength={100}
+                    placeholder="Example: Sharda Hospital, Gaur City, Sector 4..."
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700 placeholder:text-slate-400"
+                  />
+
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 <div>
 
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="budgetMin"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Minimum Budget
                   </label>
 
                   <input
+                    id="budgetMin"
                     type="number"
                     name="budgetMin"
-                    value={formData.budgetMin}
-                    onChange={handleChange}
+                    value={
+                      formData.budgetMin
+                    }
+                    onChange={
+                      handleChange
+                    }
                     min="0"
                     required
-                    className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="5000"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700"
                   />
 
                 </div>
 
                 <div>
 
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label
+                    htmlFor="budgetMax"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
                     Maximum Budget
                   </label>
 
                   <input
+                    id="budgetMax"
                     type="number"
                     name="budgetMax"
-                    value={formData.budgetMax}
-                    onChange={handleChange}
+                    value={
+                      formData.budgetMax
+                    }
+                    onChange={
+                      handleChange
+                    }
                     min="0"
                     required
-                    className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="12000"
+                    className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700"
                   />
 
                 </div>
@@ -541,16 +853,28 @@ function ProfileSetup() {
 
               <div>
 
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label
+                  htmlFor="sleepSchedule"
+                  className="block text-sm font-semibold text-slate-700 mb-2"
+                >
                   Sleep Schedule
                 </label>
 
                 <select
+                  id="sleepSchedule"
                   name="sleepSchedule"
-                  value={formData.sleepSchedule}
-                  onChange={handleChange}
-                  className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={
+                    formData.sleepSchedule
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700"
                 >
+
+                  <option value="">
+                    Select sleep schedule
+                  </option>
 
                   <option value="early-bird">
                     Early Bird
@@ -570,16 +894,28 @@ function ProfileSetup() {
 
               <div>
 
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label
+                  htmlFor="foodPref"
+                  className="block text-sm font-semibold text-slate-700 mb-2"
+                >
                   Food Preference
                 </label>
 
                 <select
+                  id="foodPref"
                   name="foodPref"
-                  value={formData.foodPref}
-                  onChange={handleChange}
-                  className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={
+                    formData.foodPref
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700"
                 >
+
+                  <option value="">
+                    Select food preference
+                  </option>
 
                   <option value="veg">
                     Vegetarian
@@ -599,16 +935,28 @@ function ProfileSetup() {
 
               <div>
 
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label
+                  htmlFor="smoking"
+                  className="block text-sm font-semibold text-slate-700 mb-2"
+                >
                   Smoking
                 </label>
 
                 <select
+                  id="smoking"
                   name="smoking"
-                  value={formData.smoking}
-                  onChange={handleChange}
-                  className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={
+                    formData.smoking
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700"
                 >
+
+                  <option value="">
+                    Select smoking preference
+                  </option>
 
                   <option value="no">
                     No
@@ -628,44 +976,73 @@ function ProfileSetup() {
 
               <div>
 
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Cleanliness: {formData.cleanliness}/5
+                <label
+                  htmlFor="cleanliness"
+                  className="block text-sm font-semibold text-slate-700 mb-2"
+                >
+                  Cleanliness
+                  {formData.cleanliness
+                    ? `: ${formData.cleanliness}/5`
+                    : ''}
                 </label>
 
                 <input
+                  id="cleanliness"
                   type="range"
                   name="cleanliness"
                   min="1"
                   max="5"
-                  value={formData.cleanliness}
-                  onChange={handleChange}
-                  className="w-full"
+                  value={
+                    formData.cleanliness ||
+                    1
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  className="w-full accent-indigo-500"
                 />
+
+                <div className="flex justify-between text-xs text-slate-400 mt-1">
+                  <span>Less tidy</span>
+                  <span>Very tidy</span>
+                </div>
 
               </div>
 
               <div>
 
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                <label
+                  htmlFor="bio"
+                  className="block text-sm font-semibold text-slate-700 mb-2"
+                >
                   About Me
                 </label>
 
                 <textarea
+                  id="bio"
                   name="bio"
-                  value={formData.bio}
-                  onChange={handleChange}
+                  value={
+                    formData.bio
+                  }
+                  onChange={
+                    handleChange
+                  }
                   rows="5"
                   maxLength={500}
                   placeholder="Tell potential flatmates something about yourself..."
-                  className="w-full border border-slate-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700 placeholder:text-slate-400 resize-none"
                 />
+
+                <p className="text-right text-xs text-slate-400 mt-1">
+                  {formData.bio.length}/500
+                </p>
 
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-semibold hover:bg-indigo-700 transition disabled:opacity-60"
+                className="w-full bg-indigo-500 text-white py-3.5 rounded-xl font-semibold hover:bg-indigo-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {loading
                   ? 'Saving...'
@@ -678,6 +1055,7 @@ function ProfileSetup() {
         </div>
 
       </div>
+
     </div>
   );
 }
