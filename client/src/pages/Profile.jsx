@@ -17,6 +17,9 @@ function Profile() {
   const fileInputRef =
     useRef(null);
 
+  const cameraMenuRef =
+    useRef(null);
+
   const [user, setUser] =
     useState(null);
 
@@ -45,6 +48,9 @@ function Profile() {
     useState('');
 
   const [savingUserId, setSavingUserId] =
+    useState(false);
+
+  const [showCameraMenu, setShowCameraMenu] =
     useState(false);
 
   const API_ORIGIN =
@@ -90,6 +96,7 @@ function Profile() {
           }
 
           setUser(profile);
+
           setNewUserId(
             profile.userId || ''
           );
@@ -164,6 +171,32 @@ function Profile() {
     fetchProfile();
   }, [navigate]);
 
+  useEffect(() => {
+    const handleOutsideClick =
+      (event) => {
+        if (
+          cameraMenuRef.current &&
+          !cameraMenuRef.current.contains(
+            event.target
+          )
+        ) {
+          setShowCameraMenu(false);
+        }
+      };
+
+    document.addEventListener(
+      'mousedown',
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleOutsideClick
+      );
+    };
+  }, []);
+
   const handleCopyUserId =
     async () => {
       if (!user?.userId) {
@@ -204,10 +237,8 @@ function Profile() {
       }
 
       if (
-        cleanUserId.length <
-          4 ||
-        cleanUserId.length >
-          30
+        cleanUserId.length < 4 ||
+        cleanUserId.length > 30
       ) {
         setError(
           'User ID must be between 4 and 30 characters'
@@ -270,10 +301,6 @@ function Profile() {
         );
 
         setEditingUserId(false);
-
-        window.dispatchEvent(
-          new Event('profile-updated')
-        );
       } catch (error) {
         console.error(
           'Failed to update User ID:',
@@ -336,6 +363,7 @@ function Profile() {
 
     setError('');
     setSelectedFile(file);
+    setShowCameraMenu(false);
 
     const preview =
       URL.createObjectURL(file);
@@ -343,102 +371,106 @@ function Profile() {
     setPreviewUrl(preview);
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      return;
-    }
+  const handleChoosePhoto =
+    () => {
+      setShowCameraMenu(false);
+      fileInputRef.current?.click();
+    };
 
-    try {
-      setUploading(true);
-      setError('');
-
-      const formData =
-        new FormData();
-
-      formData.append(
-        'profileImage',
-        selectedFile
-      );
-
-      const uploadResponse =
-        await api.post(
-          '/upload/profile-image',
-          formData
-        );
-
-      const imageUrl =
-        uploadResponse.data?.imageUrl;
-
-      if (!imageUrl) {
-        throw new Error(
-          'Image upload failed'
-        );
+  const handleUpload =
+    async () => {
+      if (!selectedFile) {
+        return;
       }
 
-      const fullImageUrl =
-        `${API_ORIGIN}${imageUrl}`;
+      try {
+        setUploading(true);
+        setError('');
 
-      const currentUserId =
-        localStorage.getItem(
-          'userId'
+        const formData =
+          new FormData();
+
+        formData.append(
+          'profileImage',
+          selectedFile
         );
 
-      const profileResponse =
-        await api.put(
-          `/auth/profile/${encodeURIComponent(
-            currentUserId
-          )}`,
-          {
+        const uploadResponse =
+          await api.post(
+            '/upload/profile-image',
+            formData
+          );
+
+        const imageUrl =
+          uploadResponse.data?.imageUrl;
+
+        if (!imageUrl) {
+          throw new Error(
+            'Image upload failed'
+          );
+        }
+
+        const fullImageUrl =
+          `${API_ORIGIN}${imageUrl}`;
+
+        const currentUserId =
+          localStorage.getItem(
+            'userId'
+          );
+
+        const profileResponse =
+          await api.put(
+            `/auth/profile/${encodeURIComponent(
+              currentUserId
+            )}`,
+            {
+              profileImage:
+                fullImageUrl
+            }
+          );
+
+        const updatedProfile =
+          profileResponse.data?.user ||
+          profileResponse.data;
+
+        setUser(
+          updatedProfile || {
+            ...user,
             profileImage:
               fullImageUrl
           }
         );
 
-      const updatedProfile =
-        profileResponse.data?.user ||
-        profileResponse.data;
+        setSelectedFile(null);
 
-      setUser(
-        updatedProfile || {
-          ...user,
-          profileImage:
-            fullImageUrl
+        if (fileInputRef.current) {
+          fileInputRef.current.value =
+            '';
         }
-      );
 
-      setSelectedFile(null);
+        setPreviewUrl('');
+      } catch (error) {
+        console.error(
+          'Profile image upload error:',
+          error
+        );
 
-      if (fileInputRef.current) {
-        fileInputRef.current.value =
-          '';
+        setError(
+          error.response?.data?.message ||
+          error.message ||
+          'Failed to upload profile image'
+        );
+      } finally {
+        setUploading(false);
       }
-
-      setPreviewUrl('');
-
-      window.dispatchEvent(
-        new Event('profile-updated')
-      );
-    } catch (error) {
-      console.error(
-        'Profile image upload error:',
-        error
-      );
-
-      setError(
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to upload profile image'
-      );
-    } finally {
-      setUploading(false);
-    }
-  };
+    };
 
   const handleRemoveImage =
     async () => {
       try {
         setUploading(true);
         setError('');
+        setShowCameraMenu(false);
 
         const currentUserId =
           localStorage.getItem(
@@ -473,10 +505,6 @@ function Profile() {
           fileInputRef.current.value =
             '';
         }
-
-        window.dispatchEvent(
-          new Event('profile-updated')
-        );
       } catch (error) {
         console.error(
           'Remove profile image error:',
@@ -493,44 +521,89 @@ function Profile() {
       }
     };
 
+  const preferences = [
+    {
+      label: 'Target Area',
+      value:
+        user?.targetArea ||
+        'Not set'
+    },
+    {
+      label: 'Budget',
+      value: `₹${user?.budgetMin ?? 0} - ₹${user?.budgetMax ?? 0}`
+    },
+    {
+      label: 'Sleep',
+      value:
+        user?.sleepSchedule ||
+        'Not set'
+    },
+    {
+      label: 'Food',
+      value:
+        user?.foodPref ||
+        'Not set'
+    },
+    {
+      label: 'Smoking',
+      value:
+        user?.smoking ||
+        'Not set'
+    },
+    {
+      label: 'Cleanliness',
+      value: `${user?.cleanliness ?? 0} / 5`
+    }
+  ];
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="bg-white px-6 py-5 rounded-2xl shadow-sm border border-slate-200">
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50 flex items-center justify-center px-4">
+
+        <div className="bg-white rounded-3xl border border-rose-100 shadow-sm px-8 py-7 text-center">
+
+          <div className="w-10 h-10 mx-auto rounded-full border-4 border-indigo-300 border-t-transparent animate-spin mb-4"></div>
+
           <p className="text-slate-600 font-medium">
             Loading profile...
           </p>
+
         </div>
+
       </div>
     );
   }
 
   if (error && !user) {
     return (
-      <div className="min-h-screen bg-slate-100 py-10 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50 flex items-center justify-center px-4">
 
-            <h2 className="text-xl font-bold text-slate-800">
-              Unable to load profile
-            </h2>
+        <div className="max-w-md w-full bg-white rounded-3xl border border-rose-100 shadow-sm p-8 text-center">
 
-            <p className="text-slate-500 mt-2">
-              {error}
-            </p>
-
-            <button
-              type="button"
-              onClick={() =>
-                window.location.reload()
-              }
-              className="mt-5 bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-indigo-700"
-            >
-              Try Again
-            </button>
-
+          <div className="text-3xl mb-3">
+            ⚠️
           </div>
+
+          <h2 className="text-xl font-bold text-slate-800">
+            Unable to load profile
+          </h2>
+
+          <p className="text-slate-500 mt-2">
+            {error}
+          </p>
+
+          <button
+            type="button"
+            onClick={() =>
+              window.location.reload()
+            }
+            className="mt-5 bg-indigo-400 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-500 transition"
+          >
+            Try Again
+          </button>
+
         </div>
+
       </div>
     );
   }
@@ -545,104 +618,214 @@ function Profile() {
     '';
 
   return (
-    <div className="min-h-screen bg-slate-100 py-10 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50 px-4 py-6 sm:py-8">
 
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-5xl mx-auto">
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="mb-6">
 
-          <div className="bg-indigo-600 px-8 py-10 text-white">
+          <p className="text-xs uppercase tracking-widest text-indigo-500 font-bold">
+            Account
+          </p>
 
-            <div className="relative w-24 h-24 mb-5">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-800 mt-1">
+            My Profile
+          </h1>
 
-              {displayedImage ? (
-                <img
-                  src={displayedImage}
-                  alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full bg-white text-indigo-600 flex items-center justify-center text-4xl font-bold border-4 border-white shadow-md">
-                  {(user.name || 'U')
-                    .charAt(0)
-                    .toUpperCase()}
-                </div>
-              )}
+          <p className="text-slate-500 text-sm mt-1">
+            Manage your profile and flatmate preferences.
+          </p>
 
-              <button
-                type="button"
-                onClick={() =>
-                  fileInputRef.current?.click()
-                }
-                disabled={uploading}
-                className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-white text-indigo-600 flex items-center justify-center shadow-md hover:bg-slate-100 disabled:opacity-50"
-                title="Change profile photo"
-              >
-                📷
-              </button>
+        </div>
 
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-
-            <h1 className="text-3xl font-bold">
-              {user.name || 'User'}
-            </h1>
-
-            <p className="text-indigo-100 mt-1">
-              {user.email || 'No email'}
-            </p>
-
-            <div className="flex flex-wrap gap-2 mt-4">
-
-              {user.gender && (
-                <span className="bg-white/15 px-3 py-1 rounded-full text-sm">
-                  {user.gender}
-                </span>
-              )}
-
-              {user.profession && (
-                <span className="bg-white/15 px-3 py-1 rounded-full text-sm">
-                  {user.profession}
-                </span>
-              )}
-
-            </div>
-
+        {error && (
+          <div className="mb-5 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-sm">
+            {error}
           </div>
+        )}
 
-          <div className="p-8">
+        <section className="relative overflow-visible rounded-3xl bg-gradient-to-r from-rose-200 via-pink-200 to-indigo-300 shadow-md border border-white mb-6">
 
-            {error && (
-              <div className="mb-5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
-                {error}
-              </div>
-            )}
+          <div className="absolute -right-16 -top-16 w-44 h-44 rounded-full border border-white/50 pointer-events-none"></div>
 
-            <div className="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div className="absolute -left-14 -bottom-20 w-40 h-40 rounded-full bg-white/20 pointer-events-none"></div>
 
-              <div className="flex flex-col gap-4">
+          <div className="relative p-6 sm:p-8">
 
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-7">
 
-                  <div className="min-w-0">
+              <div className="flex items-center gap-5 min-w-0">
 
-                    <p className="text-sm text-slate-500">
-                      User ID
+                <div
+                  ref={cameraMenuRef}
+                  className="relative flex-shrink-0"
+                >
+
+                  {displayedImage ? (
+                    <img
+                      src={displayedImage}
+                      alt="Profile"
+                      className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-white shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-white text-indigo-500 flex items-center justify-center text-5xl font-extrabold border-4 border-white shadow-lg">
+                      {(user.name || 'U')
+                        .charAt(0)
+                        .toUpperCase()}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowCameraMenu(
+                        (prev) => !prev
+                      )
+                    }
+                    disabled={uploading}
+                    className="absolute right-0 bottom-0 w-10 h-10 rounded-xl bg-white text-indigo-600 shadow-md flex items-center justify-center hover:bg-indigo-50 disabled:opacity-50 transition"
+                    title="Profile photo options"
+                  >
+                    📷
+                  </button>
+
+                  {showCameraMenu && (
+                    <div className="absolute left-0 top-[calc(100%+10px)] w-48 rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden z-[100]">
+
+                      <button
+                        type="button"
+                        onClick={
+                          handleChoosePhoto
+                        }
+                        className="w-full text-left px-4 py-3.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition"
+                      >
+                        Change photo
+                      </button>
+
+                      {user.profileImage && (
+                        <button
+                          type="button"
+                          onClick={
+                            handleRemoveImage
+                          }
+                          className="w-full text-left px-4 py-3.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition border-t border-slate-100"
+                        >
+                          Remove photo
+                        </button>
+                      )}
+
+                    </div>
+                  )}
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={
+                      handleFileSelect
+                    }
+                    className="hidden"
+                  />
+
+                </div>
+
+                <div className="min-w-0">
+
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/55 border border-white/70 text-xs font-semibold text-indigo-700">
+
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+
+                    FlatMate.GN Member
+
+                  </div>
+
+                  <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-800 mt-3 truncate">
+                    {user.name || 'User'}
+                  </h2>
+
+                  <p className="text-slate-700/75 text-sm mt-1 break-all">
+                    {user.email || 'No email'}
+                  </p>
+
+                  {user.profession && (
+                    <p className="text-indigo-700/70 text-sm mt-2">
+                      {user.profession}
                     </p>
+                  )}
 
-                    {!editingUserId ? (
-                      <p className="mt-1 font-mono font-semibold text-slate-800 break-all">
-                        {user.userId ||
-                          'Not set'}
+                  <div className="flex flex-wrap gap-2 mt-3">
+
+                    {user.gender && (
+                      <span className="px-3 py-1 rounded-full bg-white/50 border border-white/60 text-xs font-semibold text-slate-700">
+                        {user.gender}
+                      </span>
+                    )}
+
+                    {user.targetArea && (
+                      <span className="px-3 py-1 rounded-full bg-white/50 border border-white/60 text-xs font-semibold text-slate-700">
+                        {user.targetArea}
+                      </span>
+                    )}
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className="lg:w-60">
+
+                <div className="rounded-2xl bg-white/50 border border-white/70 backdrop-blur-sm px-5 py-4 shadow-sm">
+
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-indigo-700/70 font-bold">
+                    Your User ID
+                  </p>
+
+                  {!editingUserId ? (
+                    <>
+                      <p className="font-mono font-bold text-lg text-slate-800 mt-2 break-all">
+                        @{user.userId ||
+                          'not-set'}
                       </p>
-                    ) : (
+
+                      <div className="flex items-center gap-4 mt-3">
+
+                        <button
+                          type="button"
+                          onClick={
+                            handleCopyUserId
+                          }
+                          className="text-xs font-semibold text-indigo-600 hover:text-rose-600"
+                        >
+                          {copied
+                            ? 'Copied ✓'
+                            : 'Copy ID'}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewUserId(
+                              user.userId ||
+                                ''
+                            );
+
+                            setError('');
+
+                            setEditingUserId(
+                              true
+                            );
+                          }}
+                          className="text-xs font-semibold text-slate-600 hover:text-indigo-600"
+                        >
+                          Edit ID
+                        </button>
+
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-3">
+
                       <input
                         type="text"
                         value={
@@ -661,330 +844,233 @@ function Profile() {
                         maxLength={30}
                         autoFocus
                         placeholder="Enter User ID"
-                        className="mt-2 w-full sm:w-80 px-4 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                       />
-                    )}
 
-                  </div>
+                      <div className="flex gap-2 mt-2">
 
-                  {!editingUserId ? (
-                    <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={
+                            handleSaveUserId
+                          }
+                          disabled={
+                            savingUserId
+                          }
+                          className="flex-1 bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-indigo-600 disabled:opacity-50"
+                        >
+                          {savingUserId
+                            ? 'Saving...'
+                            : 'Save'}
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={
-                          handleCopyUserId
-                        }
-                        className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100"
-                      >
-                        {copied
-                          ? 'Copied ✓'
-                          : 'Copy ID'}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewUserId(
+                              user.userId ||
+                                ''
+                            );
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNewUserId(
-                            user.userId ||
-                              ''
-                          );
+                            setEditingUserId(
+                              false
+                            );
 
-                          setError('');
+                            setError('');
+                          }}
+                          disabled={
+                            savingUserId
+                          }
+                          className="flex-1 bg-white/60 border border-white/70 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-white disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
 
-                          setEditingUserId(
-                            true
-                          );
-                        }}
-                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
-                      >
-                        Edit ID
-                      </button>
-
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-
-                      <button
-                        type="button"
-                        onClick={
-                          handleSaveUserId
-                        }
-                        disabled={
-                          savingUserId
-                        }
-                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
-                      >
-                        {savingUserId
-                          ? 'Saving...'
-                          : 'Save ID'}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNewUserId(
-                            user.userId ||
-                              ''
-                          );
-
-                          setEditingUserId(
-                            false
-                          );
-
-                          setError('');
-                        }}
-                        disabled={
-                          savingUserId
-                        }
-                        className="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-300 disabled:opacity-50"
-                      >
-                        Cancel
-                      </button>
+                      </div>
 
                     </div>
                   )}
 
                 </div>
 
-                <p className="text-xs text-slate-500">
-                  4–30 characters. Use only
-                  letters, numbers and
-                  underscore.
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {selectedFile && (
+          <section className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-4 sm:p-5 mb-6">
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+
+              <img
+                src={previewUrl}
+                alt="Selected profile"
+                className="w-20 h-20 rounded-2xl object-cover border border-slate-200"
+              />
+
+              <div className="flex-1 min-w-0">
+
+                <p className="text-xs uppercase tracking-wider text-indigo-500 font-bold">
+                  New Profile Photo
                 </p>
+
+                <p className="text-sm font-semibold text-slate-800 mt-1 truncate">
+                  {selectedFile.name}
+                </p>
+
+                <p className="text-xs text-slate-500 mt-1">
+                  {(
+                    selectedFile.size /
+                    (1024 * 1024)
+                  ).toFixed(2)}{' '}
+                  MB
+                </p>
+
+              </div>
+
+              <div className="flex gap-2">
+
+                <button
+                  type="button"
+                  onClick={
+                    handleUpload
+                  }
+                  disabled={uploading}
+                  className="bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-600 disabled:opacity-50"
+                >
+                  {uploading
+                    ? 'Uploading...'
+                    : 'Save Photo'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedFile(
+                      null
+                    );
+
+                    setPreviewUrl('');
+
+                    if (
+                      fileInputRef.current
+                    ) {
+                      fileInputRef.current.value =
+                        '';
+                    }
+                  }}
+                  disabled={uploading}
+                  className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-200 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
 
               </div>
 
             </div>
 
-            {selectedFile && (
-              <div className="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-4">
+          </section>
+        )}
 
-                <p className="text-sm font-medium text-slate-700 mb-3">
-                  Selected image
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+
+          <div className="px-5 sm:px-6 py-5 border-b border-slate-200 bg-gradient-to-r from-white to-rose-50/40">
+
+            <div className="flex items-center justify-between gap-4">
+
+              <div>
+
+                <p className="text-xs uppercase tracking-widest text-indigo-500 font-bold">
+                  Lifestyle
                 </p>
 
-                <div className="flex items-center gap-4">
+                <h2 className="text-xl font-bold text-slate-800 mt-1">
+                  My Preferences
+                </h2>
 
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="w-20 h-20 rounded-xl object-cover"
-                  />
-
-                  <div className="flex-1 min-w-0">
-
-                    <p className="font-medium text-slate-800 truncate">
-                      {selectedFile.name}
-                    </p>
-
-                    <p className="text-sm text-slate-500">
-                      {(
-                        selectedFile.size /
-                        (1024 * 1024)
-                      ).toFixed(2)}{' '}
-                      MB
-                    </p>
-
-                  </div>
-
-                </div>
-
-                <div className="flex flex-wrap gap-3 mt-4">
-
-                  <button
-                    type="button"
-                    onClick={
-                      handleUpload
-                    }
-                    disabled={
-                      uploading
-                    }
-                    className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    {uploading
-                      ? 'Uploading...'
-                      : 'Upload Photo'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedFile(
-                        null
-                      );
-
-                      setPreviewUrl('');
-
-                      if (
-                        fileInputRef.current
-                      ) {
-                        fileInputRef.current.value =
-                          '';
-                      }
-                    }}
-                    disabled={
-                      uploading
-                    }
-                    className="bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-medium hover:bg-slate-300 disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-
-                </div>
-
-              </div>
-            )}
-
-            {user.profileImage &&
-              !selectedFile && (
-                <div className="mb-6">
-
-                  <button
-                    type="button"
-                    onClick={
-                      handleRemoveImage
-                    }
-                    disabled={
-                      uploading
-                    }
-                    className="text-red-600 text-sm font-medium hover:text-red-700 disabled:opacity-50"
-                  >
-                    {uploading
-                      ? 'Removing...'
-                      : 'Remove profile photo'}
-                  </button>
-
-                </div>
-              )}
-
-            <h2 className="text-xl font-bold text-slate-800 mb-5">
-              My Preferences
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              <div className="bg-slate-50 p-4 rounded-xl">
-
-                <p className="text-sm text-slate-500">
-                  Target Area
-                </p>
-
-                <p className="font-semibold text-slate-800">
-                  {user.targetArea ||
-                    'Not set'}
+                <p className="text-sm text-slate-500 mt-1">
+                  These details help find compatible flatmates.
                 </p>
 
               </div>
-
-              <div className="bg-slate-50 p-4 rounded-xl">
-
-                <p className="text-sm text-slate-500">
-                  Budget
-                </p>
-
-                <p className="font-semibold text-slate-800">
-                  ₹{user.budgetMin ?? 0}
-                  {' - '}
-                  ₹{user.budgetMax ?? 0}
-                </p>
-
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-xl">
-
-                <p className="text-sm text-slate-500">
-                  Sleep Schedule
-                </p>
-
-                <p className="font-semibold text-slate-800">
-                  {user.sleepSchedule ||
-                    'Not set'}
-                </p>
-
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-xl">
-
-                <p className="text-sm text-slate-500">
-                  Food Preference
-                </p>
-
-                <p className="font-semibold text-slate-800">
-                  {user.foodPref ||
-                    'Not set'}
-                </p>
-
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-xl">
-
-                <p className="text-sm text-slate-500">
-                  Smoking
-                </p>
-
-                <p className="font-semibold text-slate-800">
-                  {user.smoking ||
-                    'Not set'}
-                </p>
-
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-xl">
-
-                <p className="text-sm text-slate-500">
-                  Cleanliness
-                </p>
-
-                <p className="font-semibold text-slate-800">
-                  {user.cleanliness ?? 0}
-                  {' / 5'}
-                </p>
-
-              </div>
-
-            </div>
-
-            <div className="mt-6">
-
-              <h2 className="text-xl font-bold text-slate-800 mb-3">
-                About Me
-              </h2>
-
-              <div className="bg-slate-50 p-4 rounded-xl">
-
-                <p className="text-slate-700 break-words">
-                  {user.bio ||
-                    'No bio added yet.'}
-                </p>
-
-              </div>
-
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-3">
 
               <Link
                 to="/profile-setup"
-                className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-indigo-700"
+                className="text-sm font-bold text-indigo-500 hover:text-rose-500 transition"
               >
-                Edit Preferences
-              </Link>
-
-              <Link
-                to="/listings"
-                className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-slate-800"
-              >
-                Find Flatmates
+                Edit
               </Link>
 
             </div>
 
           </div>
 
+          <div className="p-5 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            {preferences.map(
+              (item) => (
+                <div
+                  key={item.label}
+                  className="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:bg-white hover:border-indigo-100 hover:shadow-sm transition"
+                >
+
+                  <p className="text-xs uppercase tracking-wider text-slate-400 font-bold">
+                    {item.label}
+                  </p>
+
+                  <p className="text-slate-800 font-bold mt-2 break-words">
+                    {item.value}
+                  </p>
+
+                </div>
+              )
+            )}
+
+          </div>
+
+        </section>
+
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6">
+
+          <p className="text-xs uppercase tracking-widest text-indigo-500 font-bold">
+            About
+          </p>
+
+          <h2 className="text-xl font-bold text-slate-800 mt-1">
+            About Me
+          </h2>
+
+          <p className="text-slate-600 leading-7 mt-4 break-words">
+            {user.bio ||
+              'No bio added yet.'}
+          </p>
+
+        </section>
+
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+
+          <Link
+            to="/profile-setup"
+            className="flex-1 text-center bg-indigo-500 text-white py-3 rounded-xl font-bold hover:bg-indigo-600 transition"
+          >
+            Edit Preferences
+          </Link>
+
+          <Link
+            to="/listings"
+            className="flex-1 text-center bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-900 transition"
+          >
+            Find Flatmates
+          </Link>
+
         </div>
 
       </div>
+
     </div>
   );
 }
