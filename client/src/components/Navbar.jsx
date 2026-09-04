@@ -496,12 +496,19 @@ function Navbar() {
 
   const isActive =
     (path) => {
-      return location.pathname ===
-        path;
+      return (
+        location.pathname ===
+        path
+      );
     };
 
+  const isChatActive =
+    location.pathname.startsWith(
+      '/chat'
+    );
+
   return (
-    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-indigo-100 shadow-sm">
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -515,30 +522,44 @@ function Navbar() {
             }
             className="flex items-center gap-2 flex-shrink-0"
           >
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-sm">
+
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-200 to-indigo-300 text-slate-700 flex items-center justify-center font-bold shadow-sm">
               F
             </div>
 
             <span className="hidden sm:block text-xl font-extrabold tracking-tight text-slate-800">
               FlatMate
-              <span className="text-indigo-600">
+              <span className="text-indigo-500">
                 .GN
               </span>
             </span>
 
           </Link>
 
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-1.5">
 
             {isLoggedIn ? (
               <>
 
                 <Link
+                  to="/"
+                  className={`hidden lg:block px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                    isActive('/')
+                      ? 'bg-rose-50 text-rose-600'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Home
+                </Link>
+
+                <Link
                   to="/dashboard"
-                  className={`hidden lg:block px-3 py-2 rounded-xl text-sm font-semibold transition ${
-                    isActive('/dashboard')
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-100'
+                  className={`hidden lg:block px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                    isActive(
+                      '/dashboard'
+                    )
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   Dashboard
@@ -546,10 +567,12 @@ function Navbar() {
 
                 <Link
                   to="/listings"
-                  className={`hidden lg:block px-3 py-2 rounded-xl text-sm font-semibold transition ${
-                    isActive('/listings')
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-100'
+                  className={`hidden lg:block px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                    isActive(
+                      '/listings'
+                    )
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   Find Flatmates
@@ -557,12 +580,10 @@ function Navbar() {
 
                 <Link
                   to="/chat"
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition ${
-                    location.pathname.startsWith(
-                      '/chat'
-                    )
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-100'
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                    isChatActive
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   <span className="text-base">
@@ -575,7 +596,9 @@ function Navbar() {
                 </Link>
 
                 <div
-                  ref={notificationRef}
+                  ref={
+                    notificationRef
+                  }
                   className="relative"
                 >
 
@@ -587,28 +610,30 @@ function Navbar() {
                           !prev
                       )
                     }
-                    className="relative w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-lg transition"
+                    className="relative w-10 h-10 rounded-xl hover:bg-indigo-50 flex items-center justify-center text-lg transition-colors"
                     aria-label="Notifications"
                   >
                     🔔
 
                     {unreadCount >
                       0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center border-2 border-white">
+                      <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-rose-400 text-white text-[11px] font-bold flex items-center justify-center border-2 border-white">
                         {unreadCount >
                         99
                           ? '99+'
                           : unreadCount}
                       </span>
                     )}
+
                   </button>
 
                   {showNotifications && (
-                    <div className="absolute right-0 mt-3 w-[min(92vw,380px)] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
+                    <div className="absolute right-0 mt-3 w-[min(92vw,380px)] bg-white border border-indigo-100 rounded-2xl shadow-xl overflow-hidden">
 
-                      <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
 
                         <div>
+
                           <h3 className="font-bold text-slate-800">
                             Notifications
                           </h3>
@@ -616,6 +641,7 @@ function Navbar() {
                           <p className="text-xs text-slate-400 mt-0.5">
                             Your latest updates
                           </p>
+
                         </div>
 
                         {unreadCount >
@@ -639,7 +665,7 @@ function Navbar() {
                         0 ? (
                           <div className="p-8 text-center">
 
-                            <div className="w-12 h-12 mx-auto rounded-full bg-indigo-50 flex items-center justify-center text-2xl mb-3">
+                            <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-rose-50 to-indigo-50 flex items-center justify-center text-2xl mb-3">
                               🔔
                             </div>
 
@@ -668,12 +694,12 @@ function Navbar() {
                                     notification
                                   )
                                 }
-                                className="w-full text-left px-4 py-3.5 border-b border-slate-100 hover:bg-slate-50 transition bg-indigo-50/40"
+                                className="w-full text-left px-4 py-3.5 border-b border-slate-100 hover:bg-indigo-50/40 transition-colors bg-indigo-50/20"
                               >
 
                                 <div className="flex gap-3">
 
-                                  <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0 font-bold">
+                                  <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0 font-bold">
                                     {(
                                       notification
                                         .senderId
@@ -711,7 +737,7 @@ function Navbar() {
 
                                   </div>
 
-                                  <span className="w-2 h-2 rounded-full bg-indigo-600 mt-2 flex-shrink-0"></span>
+                                  <span className="w-2 h-2 rounded-full bg-indigo-400 mt-2 flex-shrink-0"></span>
 
                                 </div>
 
@@ -729,10 +755,10 @@ function Navbar() {
 
                 <Link
                   to="/profile"
-                  className={`hidden md:block px-3 py-2 rounded-xl text-sm font-semibold transition ${
+                  className={`hidden md:block px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
                     isActive('/profile')
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-100'
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   Profile
@@ -740,10 +766,10 @@ function Navbar() {
 
                 <Link
                   to="/privacy"
-                  className={`hidden sm:block px-3 py-2 rounded-xl text-sm font-semibold transition ${
+                  className={`hidden sm:block px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${
                     isActive('/privacy')
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-100'
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   Privacy & Security
@@ -754,7 +780,7 @@ function Navbar() {
                   onClick={
                     handleLogout
                   }
-                  className="px-3 py-2 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition"
+                  className="px-3 py-2 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
                 >
                   Logout
                 </button>
@@ -765,14 +791,14 @@ function Navbar() {
 
                 <Link
                   to="/login"
-                  className="px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
+                  className="px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Login
                 </Link>
 
                 <Link
                   to="/register"
-                  className="px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition"
+                  className="px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-500 text-white hover:bg-indigo-600 shadow-sm transition-colors"
                 >
                   Register
                 </Link>
@@ -785,6 +811,7 @@ function Navbar() {
         </div>
 
       </div>
+
     </nav>
   );
 }
