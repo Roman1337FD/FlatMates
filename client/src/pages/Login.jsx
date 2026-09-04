@@ -1,14 +1,23 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import api from '../api/axios.js';
+import {
+  useState
+} from 'react';
+
+import {
+  Link,
+  useNavigate
+} from 'react-router-dom';
+
+import api from '../api/axios';
 
 function Login() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [identifier, setIdentifier] =
+    useState('');
+
+  const [password, setPassword] =
+    useState('');
 
   const [showPassword, setShowPassword] =
     useState(false);
@@ -16,201 +25,272 @@ function Login() {
   const [loading, setLoading] =
     useState(false);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  const [error, setError] =
+    useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit =
+    async (e) => {
+      e.preventDefault();
 
-    const email =
-      formData.email.trim();
+      const cleanIdentifier =
+        identifier.trim();
 
-    const password =
-      formData.password;
-
-    if (!email || !password) {
-      alert(
-        'Please fill all fields'
-      );
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const response =
-        await api.post(
-          '/auth/login',
-          {
-            email,
-            password
-          }
+      if (
+        !cleanIdentifier ||
+        !password
+      ) {
+        setError(
+          'Email/User ID and password are required'
         );
+        return;
+      }
 
-      if (response.data.success) {
-        const user =
-          response.data.user;
+      try {
+        setLoading(true);
+        setError('');
+
+        const isEmail =
+          cleanIdentifier.includes('@');
+
+        const payload = isEmail
+          ? {
+              email:
+                cleanIdentifier.toLowerCase(),
+              password
+            }
+          : {
+              userId:
+                cleanIdentifier.toLowerCase(),
+              password
+            };
+
+        const response =
+          await api.post(
+            '/auth/login',
+            payload
+          );
+
+        const data =
+          response.data;
+
+        if (
+          !data?.token ||
+          !data?.user
+        ) {
+          throw new Error(
+            'Invalid login response'
+          );
+        }
+
+        localStorage.setItem(
+          'token',
+          data.token
+        );
 
         localStorage.setItem(
           'userId',
-          user.id
-        );
-
-        localStorage.setItem(
-          'userEmail',
-          user.email
+          data.user.id
         );
 
         localStorage.setItem(
           'userName',
-          user.name
+          data.user.name || ''
         );
 
         localStorage.setItem(
-          'token',
-          response.data.token
+          'userEmail',
+          data.user.email || ''
+        );
+
+        localStorage.setItem(
+          'customUserId',
+          data.user.userId || ''
         );
 
         window.dispatchEvent(
           new Event('auth-changed')
         );
 
-        alert(
-          'Login successful!'
+        navigate(
+          '/dashboard',
+          {
+            replace: true
+          }
+        );
+      } catch (error) {
+        console.error(
+          'Login Error:',
+          error
         );
 
-        navigate('/dashboard');
+        setError(
+          error.response?.data?.message ||
+          error.message ||
+          'Login failed'
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error(
-        'Login Error:',
-        error
-      );
-
-      alert(
-        error.response?.data?.message ||
-        'Login failed. Please check your email and password.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-md">
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10">
 
-        <h2 className="text-3xl font-bold text-center text-slate-800">
-          Welcome Back
-        </h2>
+      <div className="w-full max-w-md">
 
-        <p className="text-center text-slate-500 mt-2 mb-6">
-          Login to find your perfect flatmate
-        </p>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-5"
-        >
+          <div className="text-center mb-8">
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">
-              Email
-            </label>
+            <h1 className="text-3xl font-bold text-slate-800">
+              Welcome Back
+            </h1>
 
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              maxLength={100}
-              autoComplete="email"
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              required
-            />
+            <p className="text-slate-500 mt-2">
+              Login to your FlatMate.GN account
+            </p>
+
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">
-              Password
-            </label>
+          {error && (
+            <div className="mb-5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+              {error}
+            </div>
+          )}
 
-            <div className="relative">
+          <form
+            onSubmit={
+              handleSubmit
+            }
+            className="space-y-5"
+          >
+
+            <div>
+
+              <label
+                htmlFor="identifier"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
+                Email or User ID
+              </label>
+
               <input
-                type={
-                  showPassword
-                    ? 'text'
-                    : 'password'
+                id="identifier"
+                type="text"
+                value={
+                  identifier
                 }
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-                maxLength={16}
-                autoComplete="current-password"
-                className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                required
-              />
-
-              <button
-                type="button"
-                onClick={() =>
-                  setShowPassword(
-                    (prev) => !prev
+                onChange={(e) =>
+                  setIdentifier(
+                    e.target.value
                   )
                 }
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 text-lg"
-                aria-label={
-                  showPassword
-                    ? 'Hide password'
-                    : 'Show password'
-                }
-              >
-                {showPassword
-                  ? '🙈'
-                  : '👁️'}
-              </button>
+                placeholder="Enter email or User ID"
+                autoComplete="username"
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+
             </div>
 
-            <div className="text-right mt-2">
+            <div>
+
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-700 mb-2"
+              >
+                Password
+              </label>
+
+              <div className="relative">
+
+                <input
+                  id="password"
+                  type={
+                    showPassword
+                      ? 'text'
+                      : 'password'
+                  }
+                  value={
+                    password
+                  }
+                  onChange={(e) =>
+                    setPassword(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Enter password"
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword(
+                      (prev) =>
+                        !prev
+                    )
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                  title={
+                    showPassword
+                      ? 'Hide password'
+                      : 'Show password'
+                  }
+                >
+                  {showPassword
+                    ? '🙈'
+                    : '👁️'}
+                </button>
+
+              </div>
+
+            </div>
+
+            <div className="flex justify-end">
+
               <Link
                 to="/forgot-password"
-                className="text-sm text-indigo-600 font-semibold hover:underline"
+                className="text-sm text-indigo-600 font-medium hover:text-indigo-700"
               >
                 Forgot Password?
               </Link>
+
             </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              {loading
+                ? 'Logging in...'
+                : 'Login'}
+            </button>
+
+          </form>
+
+          <div className="text-center mt-6">
+
+            <p className="text-sm text-slate-500">
+
+              Don't have an account?{' '}
+
+              <Link
+                to="/register"
+                className="text-indigo-600 font-semibold hover:text-indigo-700"
+              >
+                Register
+              </Link>
+
+            </p>
+
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
-          >
-            {loading
-              ? 'Logging in...'
-              : 'Login'}
-          </button>
-
-        </form>
-
-        <p className="text-center text-sm text-slate-500 mt-6">
-          Don't have an account?{' '}
-
-          <Link
-            to="/register"
-            className="text-indigo-600 font-semibold hover:underline"
-          >
-            Create Account
-          </Link>
-        </p>
+        </div>
 
       </div>
+
     </div>
   );
 }
