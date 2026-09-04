@@ -1,5 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  useEffect,
+  useRef,
+  useState
+} from 'react';
+
+import {
+  Link,
+  useLocation,
+  useNavigate
+} from 'react-router-dom';
+
 import { io } from 'socket.io-client';
 import api from '../api/axios';
 
@@ -8,7 +18,9 @@ function Navbar() {
   const location = useLocation();
 
   const [isLoggedIn, setIsLoggedIn] =
-    useState(!!localStorage.getItem('token'));
+    useState(
+      !!localStorage.getItem('token')
+    );
 
   const [notifications, setNotifications] =
     useState([]);
@@ -65,6 +77,7 @@ function Navbar() {
     if (!isLoggedIn) {
       setNotifications([]);
       setUnreadCount(0);
+      setShowNotifications(false);
 
       if (socketRef.current) {
         socketRef.current.disconnect();
@@ -341,18 +354,17 @@ function Navbar() {
   ]);
 
   useEffect(() => {
-    const handleOutsideClick = (
-      event
-    ) => {
-      if (
-        notificationRef.current &&
-        !notificationRef.current.contains(
-          event.target
-        )
-      ) {
-        setShowNotifications(false);
-      }
-    };
+    const handleOutsideClick =
+      (event) => {
+        if (
+          notificationRef.current &&
+          !notificationRef.current.contains(
+            event.target
+          )
+        ) {
+          setShowNotifications(false);
+        }
+      };
 
     document.addEventListener(
       'mousedown',
@@ -368,7 +380,9 @@ function Navbar() {
   }, []);
 
   const markNotificationRead =
-    async (notificationId) => {
+    async (
+      notificationId
+    ) => {
       try {
         await api.put(
           `/notifications/${encodeURIComponent(
@@ -379,8 +393,12 @@ function Navbar() {
         setNotifications((prev) =>
           prev.filter(
             (notification) =>
-              String(notification._id) !==
-              String(notificationId)
+              String(
+                notification._id
+              ) !==
+              String(
+                notificationId
+              )
           )
         );
 
@@ -396,25 +414,27 @@ function Navbar() {
       }
     };
 
-  const markAllRead = async () => {
-    try {
-      await api.put(
-        '/notifications/read-all'
-      );
+  const markAllRead =
+    async () => {
+      try {
+        await api.put(
+          '/notifications/read-all'
+        );
 
-      setNotifications([]);
-
-      setUnreadCount(0);
-    } catch (error) {
-      console.error(
-        'Failed to mark all notifications:',
-        error
-      );
-    }
-  };
+        setNotifications([]);
+        setUnreadCount(0);
+      } catch (error) {
+        console.error(
+          'Failed to mark all notifications:',
+          error
+        );
+      }
+    };
 
   const handleNotificationClick =
-    async (notification) => {
+    async (
+      notification
+    ) => {
       if (!notification) {
         return;
       }
@@ -458,6 +478,7 @@ function Navbar() {
     localStorage.removeItem('userName');
     localStorage.removeItem('token');
     localStorage.removeItem('userPreferences');
+    localStorage.removeItem('customUserId');
 
     setNotifications([]);
     setUnreadCount(0);
@@ -473,15 +494,18 @@ function Navbar() {
     });
   };
 
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
+  const isActive =
+    (path) => {
+      return location.pathname ===
+        path;
+    };
 
   return (
-    <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div className="h-16 flex items-center justify-between">
+        <div className="min-h-16 py-2 flex items-center justify-between gap-3">
 
           <Link
             to={
@@ -489,22 +513,32 @@ function Navbar() {
                 ? '/dashboard'
                 : '/'
             }
-            className="text-xl font-bold text-indigo-600"
+            className="flex items-center gap-2 flex-shrink-0"
           >
-            FlatMate.GN
+            <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-sm">
+              F
+            </div>
+
+            <span className="hidden sm:block text-xl font-extrabold tracking-tight text-slate-800">
+              FlatMate
+              <span className="text-indigo-600">
+                .GN
+              </span>
+            </span>
+
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-1.5 sm:gap-2">
 
             {isLoggedIn ? (
               <>
 
                 <Link
                   to="/dashboard"
-                  className={`hidden sm:block px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`hidden lg:block px-3 py-2 rounded-xl text-sm font-semibold transition ${
                     isActive('/dashboard')
                       ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   Dashboard
@@ -512,10 +546,10 @@ function Navbar() {
 
                 <Link
                   to="/listings"
-                  className={`hidden sm:block px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`hidden lg:block px-3 py-2 rounded-xl text-sm font-semibold transition ${
                     isActive('/listings')
                       ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   Find Flatmates
@@ -523,18 +557,20 @@ function Navbar() {
 
                 <Link
                   to="/chat"
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                    location.pathname.startsWith('/chat')
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition ${
+                    location.pathname.startsWith(
+                      '/chat'
+                    )
                       ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <span className="hidden sm:inline">
-                    Messages
+                  <span className="text-base">
+                    💬
                   </span>
 
-                  <span className="sm:hidden">
-                    💬
+                  <span className="hidden md:inline">
+                    Messages
                   </span>
                 </Link>
 
@@ -547,17 +583,20 @@ function Navbar() {
                     type="button"
                     onClick={() =>
                       setShowNotifications(
-                        (prev) => !prev
+                        (prev) =>
+                          !prev
                       )
                     }
-                    className="relative w-10 h-10 rounded-lg hover:bg-slate-100 flex items-center justify-center text-xl transition"
+                    className="relative w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-lg transition"
                     aria-label="Notifications"
                   >
                     🔔
 
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
-                        {unreadCount > 99
+                    {unreadCount >
+                      0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center border-2 border-white">
+                        {unreadCount >
+                        99
                           ? '99+'
                           : unreadCount}
                       </span>
@@ -565,21 +604,28 @@ function Navbar() {
                   </button>
 
                   {showNotifications && (
-                    <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
+                    <div className="absolute right-0 mt-3 w-[min(92vw,380px)] bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
 
                       <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
 
-                        <h3 className="font-bold text-slate-800">
-                          Notifications
-                        </h3>
+                        <div>
+                          <h3 className="font-bold text-slate-800">
+                            Notifications
+                          </h3>
 
-                        {unreadCount > 0 && (
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Your latest updates
+                          </p>
+                        </div>
+
+                        {unreadCount >
+                          0 && (
                           <button
                             type="button"
                             onClick={
                               markAllRead
                             }
-                            className="text-xs text-indigo-600 font-semibold hover:underline"
+                            className="text-xs text-indigo-600 font-semibold hover:text-indigo-700"
                           >
                             Mark all read
                           </button>
@@ -589,14 +635,15 @@ function Navbar() {
 
                       <div className="max-h-96 overflow-y-auto">
 
-                        {notifications.length === 0 ? (
+                        {notifications.length ===
+                        0 ? (
                           <div className="p-8 text-center">
 
-                            <div className="text-3xl mb-2">
+                            <div className="w-12 h-12 mx-auto rounded-full bg-indigo-50 flex items-center justify-center text-2xl mb-3">
                               🔔
                             </div>
 
-                            <p className="text-sm font-medium text-slate-700">
+                            <p className="text-sm font-semibold text-slate-700">
                               No notifications
                             </p>
 
@@ -607,7 +654,9 @@ function Navbar() {
                           </div>
                         ) : (
                           notifications.map(
-                            (notification) => (
+                            (
+                              notification
+                            ) => (
                               <button
                                 key={
                                   notification._id ||
@@ -619,25 +668,27 @@ function Navbar() {
                                     notification
                                   )
                                 }
-                                className="w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition bg-indigo-50/50"
+                                className="w-full text-left px-4 py-3.5 border-b border-slate-100 hover:bg-slate-50 transition bg-indigo-50/40"
                               >
 
                                 <div className="flex gap-3">
 
-                                  <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0 font-bold">
+                                  <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0 font-bold">
                                     {(
                                       notification
                                         .senderId
                                         ?.name ||
                                       'F'
                                     )
-                                      .charAt(0)
+                                      .charAt(
+                                        0
+                                      )
                                       .toUpperCase()}
                                   </div>
 
                                   <div className="flex-1 min-w-0">
 
-                                    <p className="text-sm text-slate-700 break-words">
+                                    <p className="text-sm text-slate-700 break-words leading-5">
                                       {notification.message ||
                                         'You have a new notification.'}
                                     </p>
@@ -678,10 +729,10 @@ function Navbar() {
 
                 <Link
                   to="/profile"
-                  className={`hidden md:block px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`hidden md:block px-3 py-2 rounded-xl text-sm font-semibold transition ${
                     isActive('/profile')
                       ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   Profile
@@ -689,10 +740,10 @@ function Navbar() {
 
                 <Link
                   to="/privacy"
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`hidden sm:block px-3 py-2 rounded-xl text-sm font-semibold transition ${
                     isActive('/privacy')
                       ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-50'
+                      : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   Privacy & Security
@@ -703,7 +754,7 @@ function Navbar() {
                   onClick={
                     handleLogout
                   }
-                  className="px-3 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition"
+                  className="px-3 py-2 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition"
                 >
                   Logout
                 </button>
@@ -714,14 +765,14 @@ function Navbar() {
 
                 <Link
                   to="/login"
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                  className="px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
                 >
                   Login
                 </Link>
 
                 <Link
                   to="/register"
-                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition"
+                  className="px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition"
                 >
                   Register
                 </Link>
