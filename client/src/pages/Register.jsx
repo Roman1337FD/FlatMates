@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import {
+  useNavigate,
+  Link
+} from 'react-router-dom';
 import api from '../api/axios.js';
 
 function getPasswordStrength(password) {
@@ -370,441 +373,508 @@ function Register() {
     };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50 flex items-center justify-center px-4 py-8 sm:py-10">
 
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-md">
+      <div className="w-full max-w-md">
 
-        {step === 'register' ? (
-          <>
-            <h2 className="text-3xl font-bold text-center text-slate-800">
-              Create Account
-            </h2>
+        <div className="bg-white rounded-3xl border border-indigo-100 shadow-sm p-6 sm:p-8">
 
-            <p className="text-center text-slate-500 mt-2 mb-6">
-              Join FlatMate and find your perfect roommate
-            </p>
+          {step === 'register' ? (
+            <>
 
-            <form
-              onSubmit={
-                handleRegister
-              }
-              className="space-y-5"
-            >
+              <div className="text-center mb-8">
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">
-                  Full Name
-                </label>
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-rose-100 to-indigo-100 border border-indigo-100 flex items-center justify-center text-2xl mb-4">
+                  🏠
+                </div>
 
-                <input
-                  type="text"
-                  name="name"
-                  value={
-                    formData.name
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  placeholder="Enter your full name"
-                  maxLength={50}
-                  autoComplete="name"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  required
-                />
+                <h2 className="text-3xl font-extrabold text-slate-800">
+                  Create Account
+                </h2>
+
+                <p className="text-slate-500 mt-2 text-sm sm:text-base">
+                  Join FlatMate.GN and find your perfect flatmate
+                </p>
+
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">
-                  Email
-                </label>
+              <form
+                onSubmit={
+                  handleRegister
+                }
+                className="space-y-5"
+              >
 
-                <input
-                  type="email"
-                  name="email"
-                  value={
-                    formData.email
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  placeholder="Enter your email"
-                  maxLength={100}
-                  autoComplete="email"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  required
-                />
-              </div>
+                <div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">
-                  Password
-                </label>
-
-                <div className="relative">
+                  <label
+                    htmlFor="name"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    Full Name
+                  </label>
 
                   <input
-                    type={
-                      showPassword
-                        ? 'text'
-                        : 'password'
-                    }
-                    name="password"
+                    id="name"
+                    type="text"
+                    name="name"
                     value={
-                      formData.password
+                      formData.name
                     }
                     onChange={
                       handleChange
                     }
-                    placeholder="Create a strong password"
-                    maxLength={16}
-                    minLength={8}
-                    autoComplete="new-password"
-                    className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    placeholder="Enter your full name"
+                    maxLength={50}
+                    autoComplete="name"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700 placeholder:text-slate-400 transition-colors"
                     required
                   />
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowPassword(
-                        (prev) =>
-                          !prev
-                      )
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 text-lg"
-                    aria-label={
-                      showPassword
-                        ? 'Hide password'
-                        : 'Show password'
-                    }
+                </div>
+
+                <div>
+
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
                   >
-                    {showPassword
-                      ? '🙈'
-                      : '👁️'}
-                  </button>
+                    Email
+                  </label>
+
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    value={
+                      formData.email
+                    }
+                    onChange={
+                      handleChange
+                    }
+                    placeholder="Enter your email"
+                    maxLength={100}
+                    autoComplete="email"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700 placeholder:text-slate-400 transition-colors"
+                    required
+                  />
 
                 </div>
 
-                {formData.password && (
-                  <div className="mt-3">
+                <div>
 
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-slate-500">
-                        Password strength
-                      </span>
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    Password
+                  </label>
 
-                      <span
-                        className={`text-xs font-bold ${
-                          passwordStrength.label ===
-                          'Strong'
-                            ? 'text-emerald-600'
-                            : passwordStrength.label ===
-                              'Medium'
-                            ? 'text-amber-600'
-                            : 'text-rose-600'
-                        }`}
-                      >
-                        {
-                          passwordStrength.label
-                        }
-                      </span>
-                    </div>
+                  <div className="relative">
 
-                    <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all ${
-                          passwordStrength.label ===
-                          'Strong'
-                            ? 'w-full bg-emerald-500'
-                            : passwordStrength.label ===
-                              'Medium'
-                            ? 'w-2/3 bg-amber-500'
-                            : 'w-1/3 bg-rose-500'
-                        }`}
-                      />
-                    </div>
+                    <input
+                      id="password"
+                      type={
+                        showPassword
+                          ? 'text'
+                          : 'password'
+                      }
+                      name="password"
+                      value={
+                        formData.password
+                      }
+                      onChange={
+                        handleChange
+                      }
+                      placeholder="Create a strong password"
+                      maxLength={16}
+                      minLength={8}
+                      autoComplete="new-password"
+                      className="w-full px-4 py-3 pr-12 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700 placeholder:text-slate-400 transition-colors"
+                      required
+                    />
 
-                    <div className="mt-2 text-xs space-y-1">
-
-                      <p
-                        className={
-                          formData.password.length >=
-                          8
-                            ? 'text-emerald-600'
-                            : 'text-slate-400'
-                        }
-                      >
-                        {formData.password.length >=
-                        8
-                          ? '✓'
-                          : '○'}{' '}
-                        8-16 characters
-                      </p>
-
-                      <p
-                        className={
-                          /[A-Za-z]/.test(
-                            formData.password
-                          )
-                            ? 'text-emerald-600'
-                            : 'text-slate-400'
-                        }
-                      >
-                        {/[A-Za-z]/.test(
-                          formData.password
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPassword(
+                          (prev) =>
+                            !prev
                         )
-                          ? '✓'
-                          : '○'}{' '}
-                        At least one letter
-                      </p>
-
-                      <p
-                        className={
-                          /[0-9]/.test(
-                            formData.password
-                          )
-                            ? 'text-emerald-600'
-                            : 'text-slate-400'
-                        }
-                      >
-                        {/[0-9]/.test(
-                          formData.password
-                        )
-                          ? '✓'
-                          : '○'}{' '}
-                        At least one number
-                      </p>
-
-                      <p
-                        className={
-                          /[^A-Za-z0-9]/.test(
-                            formData.password
-                          )
-                            ? 'text-emerald-600'
-                            : 'text-slate-400'
-                        }
-                      >
-                        {/[^A-Za-z0-9]/.test(
-                          formData.password
-                        )
-                          ? '✓'
-                          : '○'}{' '}
-                        At least one special character
-                      </p>
-
-                    </div>
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 flex items-center justify-center transition-colors"
+                      aria-label={
+                        showPassword
+                          ? 'Hide password'
+                          : 'Show password'
+                      }
+                    >
+                      {showPassword
+                        ? '🙈'
+                        : '👁️'}
+                    </button>
 
                   </div>
-                )}
-              </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">
-                  Confirm Password
-                </label>
+                  {formData.password && (
+                    <div className="mt-3 bg-slate-50 border border-slate-100 rounded-xl p-3">
 
-                <div className="relative">
+                      <div className="flex items-center justify-between mb-2">
 
-                  <input
-                    type={
-                      showConfirmPassword
-                        ? 'text'
-                        : 'password'
-                    }
-                    name="confirmPassword"
-                    value={
-                      formData.confirmPassword
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="Confirm your password"
-                    maxLength={16}
-                    minLength={8}
-                    autoComplete="new-password"
-                    className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    required
-                  />
+                        <span className="text-xs text-slate-500 font-medium">
+                          Password strength
+                        </span>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowConfirmPassword(
-                        (prev) =>
-                          !prev
-                      )
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 text-lg"
-                    aria-label={
-                      showConfirmPassword
-                        ? 'Hide password'
-                        : 'Show password'
-                    }
-                  >
-                    {showConfirmPassword
-                      ? '🙈'
-                      : '👁️'}
-                  </button>
+                        <span
+                          className={`text-xs font-bold ${
+                            passwordStrength.label ===
+                            'Strong'
+                              ? 'text-emerald-600'
+                              : passwordStrength.label ===
+                                'Medium'
+                              ? 'text-amber-600'
+                              : 'text-rose-600'
+                          }`}
+                        >
+                          {
+                            passwordStrength.label
+                          }
+                        </span>
+
+                      </div>
+
+                      <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+
+                        <div
+                          className={`h-full transition-all ${
+                            passwordStrength.label ===
+                            'Strong'
+                              ? 'w-full bg-emerald-500'
+                              : passwordStrength.label ===
+                                'Medium'
+                              ? 'w-2/3 bg-amber-500'
+                              : 'w-1/3 bg-rose-400'
+                          }`}
+                        />
+
+                      </div>
+
+                      <div className="mt-3 text-xs space-y-1.5">
+
+                        <p
+                          className={
+                            formData.password.length >=
+                            8
+                              ? 'text-emerald-600'
+                              : 'text-slate-400'
+                          }
+                        >
+                          {formData.password.length >=
+                          8
+                            ? '✓'
+                            : '○'}{' '}
+                          8-16 characters
+                        </p>
+
+                        <p
+                          className={
+                            /[A-Za-z]/.test(
+                              formData.password
+                            )
+                              ? 'text-emerald-600'
+                              : 'text-slate-400'
+                          }
+                        >
+                          {/[A-Za-z]/.test(
+                            formData.password
+                          )
+                            ? '✓'
+                            : '○'}{' '}
+                          At least one letter
+                        </p>
+
+                        <p
+                          className={
+                            /[0-9]/.test(
+                              formData.password
+                            )
+                              ? 'text-emerald-600'
+                              : 'text-slate-400'
+                          }
+                        >
+                          {/[0-9]/.test(
+                            formData.password
+                          )
+                            ? '✓'
+                            : '○'}{' '}
+                          At least one number
+                        </p>
+
+                        <p
+                          className={
+                            /[^A-Za-z0-9]/.test(
+                              formData.password
+                            )
+                              ? 'text-emerald-600'
+                              : 'text-slate-400'
+                          }
+                        >
+                          {/[^A-Za-z0-9]/.test(
+                            formData.password
+                          )
+                            ? '✓'
+                            : '○'}{' '}
+                          At least one special character
+                        </p>
+
+                      </div>
+
+                    </div>
+                  )}
 
                 </div>
 
-                {formData.confirmPassword && (
-                  <p
-                    className={`text-xs mt-2 font-medium ${
-                      formData.password ===
-                      formData.confirmPassword
-                        ? 'text-emerald-600'
-                        : 'text-rose-600'
-                    }`}
+                <div>
+
+                  <label
+                    htmlFor="confirmPassword"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
                   >
-                    {formData.password ===
-                    formData.confirmPassword
-                      ? '✓ Passwords match'
-                      : '✕ Passwords do not match'}
-                  </p>
-                )}
+                    Confirm Password
+                  </label>
+
+                  <div className="relative">
+
+                    <input
+                      id="confirmPassword"
+                      type={
+                        showConfirmPassword
+                          ? 'text'
+                          : 'password'
+                      }
+                      name="confirmPassword"
+                      value={
+                        formData.confirmPassword
+                      }
+                      onChange={
+                        handleChange
+                      }
+                      placeholder="Confirm your password"
+                      maxLength={16}
+                      minLength={8}
+                      autoComplete="new-password"
+                      className="w-full px-4 py-3 pr-12 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700 placeholder:text-slate-400 transition-colors"
+                      required
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(
+                          (prev) =>
+                            !prev
+                        )
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 flex items-center justify-center transition-colors"
+                      aria-label={
+                        showConfirmPassword
+                          ? 'Hide password'
+                          : 'Show password'
+                      }
+                    >
+                      {showConfirmPassword
+                        ? '🙈'
+                        : '👁️'}
+                    </button>
+
+                  </div>
+
+                  {formData.confirmPassword && (
+                    <p
+                      className={`text-xs mt-2 font-semibold ${
+                        formData.password ===
+                        formData.confirmPassword
+                          ? 'text-emerald-600'
+                          : 'text-rose-600'
+                      }`}
+                    >
+                      {formData.password ===
+                      formData.confirmPassword
+                        ? '✓ Passwords match'
+                        : '✕ Passwords do not match'}
+                    </p>
+                  )}
+
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-indigo-500 text-white font-semibold py-3 rounded-xl hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                >
+                  {loading
+                    ? 'Sending OTP...'
+                    : 'Continue'}
+                </button>
+
+              </form>
+
+              <div className="relative my-7">
+
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-100"></div>
+                </div>
+
+                <div className="relative flex justify-center">
+                  <span className="bg-white px-3 text-xs text-slate-400">
+                    ALREADY HAVE AN ACCOUNT?
+                  </span>
+                </div>
+
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
-              >
-                {loading
-                  ? 'Sending OTP...'
-                  : 'Continue'}
-              </button>
+              <p className="text-center text-sm text-slate-500">
 
-            </form>
+                Already have an account?{' '}
 
-            <p className="text-center text-sm text-slate-500 mt-6">
-              Already have an account?{' '}
+                <Link
+                  to="/login"
+                  className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
+                >
+                  Login
+                </Link>
 
-              <Link
-                to="/login"
-                className="text-indigo-600 font-semibold hover:underline"
-              >
-                Login
-              </Link>
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="text-center">
-
-              <div className="w-16 h-16 mx-auto rounded-full bg-indigo-100 flex items-center justify-center text-3xl mb-4">
-                📧
-              </div>
-
-              <h2 className="text-3xl font-bold text-slate-800">
-                Verify Your Email
-              </h2>
-
-              <p className="text-slate-500 mt-2">
-                We've sent a 6-digit OTP to
               </p>
 
-              <p className="font-semibold text-slate-800 mt-1 break-all">
-                {formData.email}
-              </p>
+            </>
+          ) : (
+            <>
 
-            </div>
+              <div className="text-center">
 
-            <form
-              onSubmit={
-                handleVerifyOtp
-              }
-              className="space-y-5 mt-6"
-            >
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-rose-100 to-indigo-100 border border-indigo-100 flex items-center justify-center text-3xl mb-4">
+                  📧
+                </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Enter OTP
-                </label>
+                <h2 className="text-3xl font-extrabold text-slate-800">
+                  Verify Your Email
+                </h2>
 
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  value={otp}
-                  onChange={(e) =>
-                    setOtp(
-                      e.target.value
-                        .replace(
-                          /\D/g,
-                          ''
-                        )
-                        .slice(
-                          0,
-                          6
-                        )
-                    )
-                  }
-                  maxLength={6}
-                  placeholder="Enter 6-digit OTP"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg text-center text-xl tracking-[0.5em] focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                  required
-                />
+                <p className="text-slate-500 mt-2">
+                  We've sent a 6-digit OTP to
+                </p>
+
+                <p className="font-semibold text-slate-800 mt-1 break-all">
+                  {formData.email}
+                </p>
+
               </div>
 
-              <button
-                type="submit"
-                disabled={
-                  loading ||
-                  otp.length !== 6
+              <form
+                onSubmit={
+                  handleVerifyOtp
                 }
-                className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+                className="space-y-5 mt-7"
               >
-                {loading
-                  ? 'Verifying...'
-                  : 'Verify & Create Account'}
-              </button>
 
-            </form>
+                <div>
 
-            <div className="text-center mt-5">
+                  <label
+                    htmlFor="otp"
+                    className="block text-sm font-semibold text-slate-700 mb-2"
+                  >
+                    Enter OTP
+                  </label>
 
-              <p className="text-sm text-slate-500">
-                Didn't receive the OTP?
-              </p>
+                  <input
+                    id="otp"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={otp}
+                    onChange={(e) =>
+                      setOtp(
+                        e.target.value
+                          .replace(
+                            /\D/g,
+                            ''
+                          )
+                          .slice(
+                            0,
+                            6
+                          )
+                      )
+                    }
+                    maxLength={6}
+                    placeholder="Enter 6-digit OTP"
+                    className="w-full px-4 py-3 border border-indigo-100 rounded-xl bg-indigo-50/40 text-center text-xl tracking-[0.5em] focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700 placeholder:text-slate-400"
+                    required
+                  />
+
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={
+                    loading ||
+                    otp.length !== 6
+                  }
+                  className="w-full bg-indigo-500 text-white font-semibold py-3 rounded-xl hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading
+                    ? 'Verifying...'
+                    : 'Verify & Create Account'}
+                </button>
+
+              </form>
+
+              <div className="mt-6 bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
+
+                <p className="text-sm text-slate-500">
+                  Didn't receive the OTP?
+                </p>
+
+                <button
+                  type="button"
+                  onClick={
+                    handleResendOtp
+                  }
+                  disabled={
+                    resendCooldown >
+                      0 ||
+                    resending
+                  }
+                  className="mt-2 text-indigo-600 font-semibold text-sm hover:text-indigo-700 disabled:text-slate-400 transition-colors"
+                >
+                  {resending
+                    ? 'Sending...'
+                    : resendCooldown >
+                      0
+                    ? `Resend OTP in ${resendCooldown}s`
+                    : 'Resend OTP'}
+                </button>
+
+              </div>
 
               <button
                 type="button"
-                onClick={
-                  handleResendOtp
+                onClick={() =>
+                  setStep(
+                    'register'
+                  )
                 }
-                disabled={
-                  resendCooldown >
-                    0 ||
-                  resending
-                }
-                className="mt-2 text-indigo-600 font-semibold text-sm hover:underline disabled:text-slate-400 disabled:no-underline"
+                className="w-full mt-5 bg-white border border-slate-200 text-slate-700 font-semibold py-3 rounded-xl hover:bg-slate-50 transition-colors"
               >
-                {resending
-                  ? 'Sending...'
-                  : resendCooldown >
-                    0
-                  ? `Resend OTP in ${resendCooldown}s`
-                  : 'Resend OTP'}
+                ← Back to Registration
               </button>
 
-            </div>
+            </>
+          )}
 
-            <button
-              type="button"
-              onClick={() =>
-                setStep(
-                  'register'
-                )
-              }
-              className="w-full mt-5 border border-slate-300 text-slate-700 font-semibold py-3 rounded-lg hover:bg-slate-50 transition"
-            >
-              ← Back to Registration
-            </button>
-          </>
-        )}
+        </div>
 
       </div>
+
     </div>
   );
 }
