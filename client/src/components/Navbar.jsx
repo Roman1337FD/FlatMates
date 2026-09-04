@@ -489,7 +489,7 @@ function Navbar() {
       new Event('auth-changed')
     );
 
-    navigate('/login', {
+    navigate('/', {
       replace: true
     });
   };
@@ -586,6 +586,7 @@ function Navbar() {
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
+
                   <span className="text-base">
                     💬
                   </span>
@@ -593,6 +594,7 @@ function Navbar() {
                   <span className="hidden md:inline">
                     Messages
                   </span>
+
                 </Link>
 
                 <div
@@ -613,6 +615,7 @@ function Navbar() {
                     className="relative w-10 h-10 rounded-xl hover:bg-indigo-50 flex items-center justify-center text-lg transition-colors"
                     aria-label="Notifications"
                   >
+
                     🔔
 
                     {unreadCount >
