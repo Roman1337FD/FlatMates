@@ -1,4 +1,8 @@
-import { useEffect, useState } from 'react';
+import {
+  useEffect,
+  useState
+} from 'react';
+
 import api from '../api/axios';
 import MatchCard from '../components/MatchCard';
 
@@ -168,250 +172,263 @@ function Listings() {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchMatches = async () => {
-      setLoading(true);
-      setError('');
+    const fetchMatches =
+      async () => {
+        setLoading(true);
+        setError('');
 
-      try {
-        const currentUserId =
-          localStorage.getItem(
-            'userId'
-          );
-
-        const token =
-          localStorage.getItem(
-            'token'
-          );
-
-        if (
-          !currentUserId ||
-          !token
-        ) {
-          if (isMounted) {
-            setError(
-              'Please login first.'
+        try {
+          const currentUserId =
+            localStorage.getItem(
+              'userId'
             );
 
-            setLoading(false);
-          }
-
-          return;
-        }
-
-        const profileResponse =
-          await api.get(
-            `/auth/profile/${encodeURIComponent(
-              currentUserId
-            )}`
-          );
-
-        const userProfile =
-          profileResponse.data?.user ||
-          profileResponse.data;
-
-        if (
-          !userProfile ||
-          !userProfile._id
-        ) {
-          if (isMounted) {
-            setError(
-              'Your profile could not be found.'
+          const token =
+            localStorage.getItem(
+              'token'
             );
 
-            setLoading(false);
+          if (
+            !currentUserId ||
+            !token
+          ) {
+            if (isMounted) {
+              setError(
+                'Please login first.'
+              );
+
+              setLoading(false);
+            }
+
+            return;
           }
 
-          return;
-        }
-
-        const response =
-          await api.get(
-            '/auth/users'
-          );
-
-        const usersData =
-          response.data?.users ??
-          response.data;
-
-        const users =
-          Array.isArray(usersData)
-            ? usersData
-            : [];
-
-        const otherUsers =
-          users.filter(
-            (user) =>
-              user?._id &&
-              String(user._id) !==
-                String(currentUserId)
-          );
-
-        if (
-          otherUsers.length === 0
-        ) {
-          if (isMounted) {
-            setError(
-              'No other registered users found. Register another user to find a flatmate.'
+          const profileResponse =
+            await api.get(
+              `/auth/profile/${encodeURIComponent(
+                currentUserId
+              )}`
             );
 
-            setLoading(false);
+          const userProfile =
+            profileResponse.data?.user ||
+            profileResponse.data;
+
+          if (
+            !userProfile ||
+            !userProfile._id
+          ) {
+            if (isMounted) {
+              setError(
+                'Your profile could not be found.'
+              );
+
+              setLoading(false);
+            }
+
+            return;
           }
 
-          return;
-        }
+          const response =
+            await api.get(
+              '/auth/users'
+            );
 
-        const currentProfile = {
-          targetArea:
-            userProfile.targetArea,
+          const usersData =
+            response.data?.users ??
+            response.data;
 
-          budgetMin:
-            userProfile.budgetMin,
+          const users =
+            Array.isArray(
+              usersData
+            )
+              ? usersData
+              : [];
 
-          budgetMax:
-            userProfile.budgetMax,
+          const otherUsers =
+            users.filter(
+              (user) =>
+                user?._id &&
+                String(
+                  user._id
+                ) !==
+                  String(
+                    currentUserId
+                  )
+            );
 
-          sleepSchedule:
-            userProfile.sleepSchedule,
+          if (
+            otherUsers.length ===
+            0
+          ) {
+            if (isMounted) {
+              setError(
+                'No other registered users found. Register another user to find a flatmate.'
+              );
 
-          foodPref:
-            userProfile.foodPref,
+              setLoading(false);
+            }
 
-          smoking:
-            userProfile.smoking,
+            return;
+          }
 
-          cleanliness:
-            userProfile.cleanliness
-        };
+          const currentProfile =
+            {
+              targetArea:
+                userProfile.targetArea,
 
-        const matchPromises =
-          otherUsers.map(
-            async (target) => {
-              try {
-                const result =
-                  await api.post(
-                    '/match/calculate',
-                    {
-                      targetUserId:
-                        target._id
-                    }
+              budgetMin:
+                userProfile.budgetMin,
+
+              budgetMax:
+                userProfile.budgetMax,
+
+              sleepSchedule:
+                userProfile.sleepSchedule,
+
+              foodPref:
+                userProfile.foodPref,
+
+              smoking:
+                userProfile.smoking,
+
+              cleanliness:
+                userProfile.cleanliness
+            };
+
+          const matchPromises =
+            otherUsers.map(
+              async (target) => {
+                try {
+                  const result =
+                    await api.post(
+                      '/match/calculate',
+                      {
+                        targetUserId:
+                          target._id
+                      }
+                    );
+
+                  const matchData =
+                    result.data
+                      ?.matchData ||
+                    result.data;
+
+                  if (
+                    !matchData ||
+                    typeof matchData.matchScore !==
+                      'number'
+                  ) {
+                    throw new Error(
+                      'Invalid AI match response'
+                    );
+                  }
+
+                  return {
+                    id: target._id,
+
+                    userId:
+                      target._id,
+
+                    name:
+                      target.name ||
+                      'Flatmate',
+
+                    profileImage:
+                      typeof target.profileImage ===
+                      'string'
+                        ? target.profileImage
+                        : '',
+
+                    area:
+                      target.targetArea ||
+                      'Area not specified',
+
+                    budget: `${target.budgetMin ?? 0} - ${target.budgetMax ?? 0}`,
+
+                    matchScore:
+                      Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          Math.round(
+                            matchData.matchScore
+                          )
+                        )
+                      ),
+
+                    summary:
+                      typeof matchData.summary ===
+                      'string'
+                        ? matchData.summary
+                        : 'Compatibility calculated using AI.',
+
+                    pros:
+                      Array.isArray(
+                        matchData.pros
+                      )
+                        ? matchData.pros
+                        : [],
+
+                    cons:
+                      Array.isArray(
+                        matchData.cons
+                      )
+                        ? matchData.cons
+                        : []
+                  };
+                } catch (
+                  geminiError
+                ) {
+                  console.error(
+                    `Gemini failed for ${
+                      target.name ||
+                      'user'
+                    }:`,
+                    geminiError
                   );
 
-                const matchData =
-                  result.data?.matchData ||
-                  result.data;
-
-                if (
-                  !matchData ||
-                  typeof matchData.matchScore !==
-                    'number'
-                ) {
-                  throw new Error(
-                    'Invalid AI match response'
+                  return createFallbackResult(
+                    currentProfile,
+                    target
                   );
                 }
-
-                return {
-                  id: target._id,
-
-                  userId:
-                    target._id,
-
-                  name:
-                    target.name ||
-                    'Flatmate',
-
-                  profileImage:
-                    typeof target.profileImage ===
-                    'string'
-                      ? target.profileImage
-                      : '',
-
-                  area:
-                    target.targetArea ||
-                    'Area not specified',
-
-                  budget: `${target.budgetMin ?? 0} - ${target.budgetMax ?? 0}`,
-
-                  matchScore:
-                    Math.max(
-                      0,
-                      Math.min(
-                        100,
-                        Math.round(
-                          matchData.matchScore
-                        )
-                      )
-                    ),
-
-                  summary:
-                    typeof matchData.summary ===
-                    'string'
-                      ? matchData.summary
-                      : 'Compatibility calculated using AI.',
-
-                  pros:
-                    Array.isArray(
-                      matchData.pros
-                    )
-                      ? matchData.pros
-                      : [],
-
-                  cons:
-                    Array.isArray(
-                      matchData.cons
-                    )
-                      ? matchData.cons
-                      : []
-                };
-              } catch (
-                geminiError
-              ) {
-                console.error(
-                  `Gemini failed for ${target.name || 'user'}:`,
-                  geminiError
-                );
-
-                return createFallbackResult(
-                  currentProfile,
-                  target
-                );
               }
-            }
+            );
+
+          const results =
+            await Promise.all(
+              matchPromises
+            );
+
+          results.sort(
+            (a, b) =>
+              b.matchScore -
+              a.matchScore
           );
 
-        const results =
-          await Promise.all(
-            matchPromises
+          if (isMounted) {
+            setMatches(results);
+          }
+        } catch (err) {
+          console.error(
+            'Error loading matches:',
+            err
           );
 
-        results.sort(
-          (a, b) =>
-            b.matchScore -
-            a.matchScore
-        );
-
-        if (isMounted) {
-          setMatches(results);
+          if (isMounted) {
+            setError(
+              err.response?.data?.message ||
+              err.response?.data?.error ||
+              'Failed to load flatmate matches.'
+            );
+          }
+        } finally {
+          if (isMounted) {
+            setLoading(false);
+          }
         }
-      } catch (err) {
-        console.error(
-          'Error loading matches:',
-          err
-        );
-
-        if (isMounted) {
-          setError(
-            err.response?.data?.message ||
-            err.response?.data?.error ||
-            'Failed to load flatmate matches.'
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+      };
 
     fetchMatches();
 
@@ -421,67 +438,135 @@ function Listings() {
   }, []);
 
   return (
-    <div className="py-6">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50 px-4 py-6 sm:py-8">
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <div className="max-w-6xl mx-auto">
 
-        <div>
+        <div className="mb-7">
 
-          <h2 className="text-2xl font-bold text-slate-800">
-            AI Matched Flatmates in Greater Noida
-          </h2>
+          <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-600 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide">
 
-          <p className="text-slate-500 text-sm">
-            Real users matched using lifestyle compatibility.
+            ✨ AI Matching
+
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-800 mt-3">
+            Find Your Flatmate
+          </h1>
+
+          <p className="text-slate-500 text-sm sm:text-base mt-2 max-w-2xl">
+            Discover real users in Greater Noida who match your lifestyle, budget and daily habits.
           </p>
 
         </div>
+
+        <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-4 sm:p-5 mb-7">
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-50 to-indigo-50 border border-indigo-100 flex items-center justify-center text-xl flex-shrink-0">
+              🏠
+            </div>
+
+            <div className="flex-1">
+
+              <h2 className="font-bold text-slate-800">
+                Smart compatibility matching
+              </h2>
+
+              <p className="text-sm text-slate-500 mt-1">
+                Matches are based on area, budget, sleep, food, smoking and cleanliness preferences.
+              </p>
+
+            </div>
+
+            <div className="px-4 py-2 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 text-sm font-bold whitespace-nowrap">
+              Greater Noida
+            </div>
+
+          </div>
+
+        </div>
+
+        {loading && (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm py-14 text-center">
+
+            <div className="w-10 h-10 mx-auto rounded-full border-4 border-indigo-300 border-t-transparent animate-spin mb-4"></div>
+
+            <p className="text-slate-700 font-semibold">
+              Finding compatible flatmates...
+            </p>
+
+            <p className="text-slate-400 text-sm mt-1">
+              Comparing lifestyle and budget preferences.
+            </p>
+
+          </div>
+        )}
+
+        {!loading &&
+          error && (
+            <div className="max-w-xl mx-auto bg-white border border-rose-200 rounded-2xl shadow-sm p-7 text-center">
+
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-50 flex items-center justify-center text-xl mb-4">
+                ⚠️
+              </div>
+
+              <h2 className="font-bold text-slate-800">
+                No matches available
+              </h2>
+
+              <p className="text-sm text-slate-500 mt-2">
+                {error}
+              </p>
+
+            </div>
+          )}
+
+        {!loading &&
+          !error &&
+          matches.length > 0 && (
+            <>
+              <div className="flex items-center justify-between mb-4">
+
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">
+                    Compatible Flatmates
+                  </h2>
+
+                  <p className="text-sm text-slate-500 mt-1">
+                    Best matches are shown first.
+                  </p>
+                </div>
+
+                <span className="hidden sm:block px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-500">
+                  {matches.length}{' '}
+                  {matches.length ===
+                  1
+                    ? 'match'
+                    : 'matches'}
+                </span>
+
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                {matches.map(
+                  (match) => (
+                    <MatchCard
+                      key={match.id}
+                      matchData={
+                        match
+                      }
+                    />
+                  )
+                )}
+
+              </div>
+            </>
+          )}
 
       </div>
-
-      {loading && (
-        <div className="text-center py-12">
-
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-2"></div>
-
-          <p className="text-slate-600 font-medium">
-            Finding compatible flatmates...
-          </p>
-
-        </div>
-      )}
-
-      {!loading &&
-        error && (
-          <div className="max-w-xl mx-auto bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-5 text-center">
-
-            <p className="font-semibold mb-1">
-              No matches available
-            </p>
-
-            <p className="text-sm">
-              {error}
-            </p>
-
-          </div>
-        )}
-
-      {!loading &&
-        !error &&
-        matches.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {matches.map(
-              (match) => (
-                <MatchCard
-                  key={match.id}
-                  matchData={match}
-                />
-              )
-            )}
-
-          </div>
-        )}
 
     </div>
   );
