@@ -15,6 +15,9 @@ const MAX_OTP_ATTEMPTS = 5;
 const OTP_RESEND_COOLDOWN_MS =
   60 * 1000;
 
+const USER_ID_MIN_LENGTH = 4;
+const USER_ID_MAX_LENGTH = 30;
+
 const generateOtp = () => {
   return crypto
     .randomInt(100000, 1000000)
@@ -28,9 +31,82 @@ const hashOtp = (otp) => {
     .digest('hex');
 };
 
-const validatePassword = (password) => {
+const generateUserId = (
+  name
+) => {
+  const base =
+    String(name || 'user')
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9]+/g,
+        ''
+      )
+      .slice(0, 16) ||
+    'user';
+
+  return `${base}_${crypto
+    .randomInt(1000, 10000)
+    .toString()}`;
+};
+
+const createUniqueUserId = async (
+  name
+) => {
+  let userId = '';
+  let exists = true;
+
+  while (exists) {
+    userId =
+      generateUserId(name);
+
+    exists =
+      await User.exists({
+        userId
+      });
+  }
+
+  return userId;
+};
+
+const validateUserId = (
+  userId
+) => {
   if (
-    typeof password !== 'string' ||
+    typeof userId !==
+    'string'
+  ) {
+    return 'User ID is required';
+  }
+
+  const cleanUserId =
+    userId.trim().toLowerCase();
+
+  if (
+    cleanUserId.length <
+      USER_ID_MIN_LENGTH ||
+    cleanUserId.length >
+      USER_ID_MAX_LENGTH
+  ) {
+    return `User ID must be between ${USER_ID_MIN_LENGTH} and ${USER_ID_MAX_LENGTH} characters`;
+  }
+
+  if (
+    !/^[a-z0-9_]+$/.test(
+      cleanUserId
+    )
+  ) {
+    return 'User ID can contain only lowercase letters, numbers and underscore';
+  }
+
+  return null;
+};
+
+const validatePassword = (
+  password
+) => {
+  if (
+    typeof password !==
+      'string' ||
     password.length < 8 ||
     password.length > 16
   ) {
@@ -73,7 +149,9 @@ const createOtpData = () => {
   };
 };
 
-const createToken = (userId) => {
+const createToken = (
+  userId
+) => {
   return jwt.sign(
     {
       userId
@@ -115,14 +193,18 @@ export const registerUser = async (
       });
     }
 
-    if (cleanName.length > 50) {
+    if (
+      cleanName.length > 50
+    ) {
       return res.status(400).json({
         message:
           'Name must be 50 characters or less'
       });
     }
 
-    if (cleanEmail.length > 100) {
+    if (
+      cleanEmail.length > 100
+    ) {
       return res.status(400).json({
         message:
           'Email must be 100 characters or less'
@@ -270,7 +352,10 @@ export const registerUser = async (
 };
 
 export const verifyRegistrationOtp =
-  async (req, res) => {
+  async (
+    req,
+    res
+  ) => {
     try {
       const {
         email,
@@ -377,8 +462,15 @@ export const verifyRegistrationOtp =
         });
       }
 
+      const generatedUserId =
+        await createUniqueUserId(
+          pending.name
+        );
+
       const user =
         await User.create({
+          userId:
+            generatedUserId,
           name: pending.name,
           email: pending.email,
           password: pending.password
@@ -394,6 +486,7 @@ export const verifyRegistrationOtp =
           'Email verified successfully. Account created.',
         user: {
           id: user._id,
+          userId: user.userId,
           name: user.name,
           email: user.email
         }
@@ -412,7 +505,10 @@ export const verifyRegistrationOtp =
   };
 
 export const resendRegistrationOtp =
-  async (req, res) => {
+  async (
+    req,
+    res
+  ) => {
     try {
       const {
         email
@@ -543,34 +639,55 @@ export const loginUser = async (
   try {
     const {
       email,
+      userId,
       password
     } = req.body;
 
-    const cleanEmail =
-      email
-        ?.trim()
+    const identifier =
+      String(
+        email ||
+        userId ||
+        ''
+      )
+        .trim()
         .toLowerCase();
 
     if (
-      !cleanEmail ||
+      !identifier ||
       !password
     ) {
       return res.status(400).json({
         message:
-          'Email and password are required'
+          'Email/User ID and password are required'
       });
     }
 
     const user =
       await User.findOne({
-        email: cleanEmail
+        $or: [
+          {
+            email: identifier
+          },
+          {
+            userId: identifier
+          }
+        ]
       });
 
     if (!user) {
       return res.status(401).json({
         message:
-          'Invalid email or password'
+          'Invalid email/User ID or password'
       });
+    }
+
+    if (!user.userId) {
+      user.userId =
+        await createUniqueUserId(
+          user.name
+        );
+
+      await user.save();
     }
 
     const passwordMatch =
@@ -582,7 +699,7 @@ export const loginUser = async (
     if (!passwordMatch) {
       return res.status(401).json({
         message:
-          'Invalid email or password'
+          'Invalid email/User ID or password'
       });
     }
 
@@ -596,6 +713,8 @@ export const loginUser = async (
       token,
       user: {
         id: user._id,
+        userId:
+          user.userId,
         name: user.name,
         email: user.email
       }
@@ -614,7 +733,10 @@ export const loginUser = async (
 };
 
 export const forgotPassword =
-  async (req, res) => {
+  async (
+    req,
+    res
+  ) => {
     try {
       const {
         email
@@ -735,7 +857,10 @@ export const forgotPassword =
   };
 
 export const verifyPasswordResetOtp =
-  async (req, res) => {
+  async (
+    req,
+    res
+  ) => {
     try {
       const {
         email,
@@ -872,7 +997,10 @@ export const verifyPasswordResetOtp =
   };
 
 export const resendPasswordResetOtp =
-  async (req, res) => {
+  async (
+    req,
+    res
+  ) => {
     try {
       const {
         email
@@ -975,7 +1103,10 @@ export const resendPasswordResetOtp =
   };
 
 export const resetPassword =
-  async (req, res) => {
+  async (
+    req,
+    res
+  ) => {
     try {
       const {
         email,
@@ -1097,7 +1228,7 @@ export const getUsers = async (
         }
       })
         .select(
-          'name email profileImage gender profession targetArea budgetMin budgetMax sleepSchedule foodPref smoking cleanliness bio'
+          'userId name email profileImage gender profession targetArea budgetMin budgetMax sleepSchedule foodPref smoking cleanliness bio'
         )
         .lean();
 
@@ -1147,6 +1278,24 @@ export const getProfile = async (
       });
     }
 
+    if (!user.userId) {
+      const generatedUserId =
+        await createUniqueUserId(
+          user.name
+        );
+
+      await User.findByIdAndUpdate(
+        requestedUserId,
+        {
+          userId:
+            generatedUserId
+        }
+      );
+
+      user.userId =
+        generatedUserId;
+    }
+
     return res.json(user);
   } catch (error) {
     console.error(
@@ -1162,14 +1311,17 @@ export const getProfile = async (
 };
 
 export const getPublicProfile =
-  async (req, res) => {
+  async (
+    req,
+    res
+  ) => {
     try {
       const user =
         await User.findById(
           req.params.userId
         )
           .select(
-            'name profileImage gender profession targetArea budgetMin budgetMax sleepSchedule foodPref smoking cleanliness bio'
+            'userId name profileImage gender profession targetArea budgetMin budgetMax sleepSchedule foodPref smoking cleanliness bio'
           )
           .lean();
 
@@ -1195,7 +1347,10 @@ export const getPublicProfile =
   };
 
 export const updateProfile =
-  async (req, res) => {
+  async (
+    req,
+    res
+  ) => {
     try {
       const userId =
         req.params.userId;
@@ -1211,6 +1366,7 @@ export const updateProfile =
       }
 
       const allowedFields = [
+        'userId',
         'name',
         'profileImage',
         'gender',
@@ -1237,6 +1393,51 @@ export const updateProfile =
           updates[field] =
             req.body[field];
         }
+      }
+
+      if (
+        updates.userId !==
+        undefined
+      ) {
+        const cleanUserId =
+          String(
+            updates.userId
+          )
+            .trim()
+            .toLowerCase();
+
+        const userIdError =
+          validateUserId(
+            cleanUserId
+          );
+
+        if (userIdError) {
+          return res.status(400).json({
+            message:
+              userIdError
+          });
+        }
+
+        const existingUser =
+          await User.findOne({
+            userId:
+              cleanUserId,
+            _id: {
+              $ne: userId
+            }
+          })
+            .select('_id')
+            .lean();
+
+        if (existingUser) {
+          return res.status(409).json({
+            message:
+              'This User ID is already taken'
+          });
+        }
+
+        updates.userId =
+          cleanUserId;
       }
 
       if (
@@ -1472,6 +1673,15 @@ export const updateProfile =
         'Update Profile Error:',
         error
       );
+
+      if (
+        error.code === 11000
+      ) {
+        return res.status(409).json({
+          message:
+            'This User ID is already taken'
+        });
+      }
 
       return res.status(500).json({
         message:

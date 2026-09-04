@@ -3,16 +3,19 @@ import {
   useRef,
   useState
 } from 'react';
+
 import {
   Link,
   useNavigate
 } from 'react-router-dom';
+
 import api from '../api/axios';
 
 function Profile() {
   const navigate = useNavigate();
 
-  const fileInputRef = useRef(null);
+  const fileInputRef =
+    useRef(null);
 
   const [user, setUser] =
     useState(null);
@@ -32,6 +35,18 @@ function Profile() {
   const [previewUrl, setPreviewUrl] =
     useState('');
 
+  const [copied, setCopied] =
+    useState(false);
+
+  const [editingUserId, setEditingUserId] =
+    useState(false);
+
+  const [newUserId, setNewUserId] =
+    useState('');
+
+  const [savingUserId, setSavingUserId] =
+    useState(false);
+
   const API_ORIGIN =
     import.meta.env.VITE_SOCKET_URL ||
     'http://localhost:5000';
@@ -47,89 +62,237 @@ function Profile() {
       navigate('/login', {
         replace: true
       });
+
       return;
     }
 
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        setError('');
+    const fetchProfile =
+      async () => {
+        try {
+          setLoading(true);
+          setError('');
 
-        const response =
-          await api.get(
-            `/auth/profile/${encodeURIComponent(
-              userId
-            )}`
+          const response =
+            await api.get(
+              `/auth/profile/${encodeURIComponent(
+                userId
+              )}`
+            );
+
+          const profile =
+            response.data?.user ||
+            response.data;
+
+          if (!profile) {
+            throw new Error(
+              'Profile not found'
+            );
+          }
+
+          setUser(profile);
+          setNewUserId(
+            profile.userId || ''
           );
 
-        const profile =
-          response.data?.user ||
-          response.data;
-
-        if (!profile) {
-          throw new Error(
-            'Profile not found'
+          localStorage.setItem(
+            'userName',
+            profile.name || ''
           );
+
+          localStorage.setItem(
+            'userEmail',
+            profile.email || ''
+          );
+
+          if (profile.userId) {
+            localStorage.setItem(
+              'customUserId',
+              profile.userId
+            );
+          }
+        } catch (error) {
+          console.error(
+            'Failed to load profile:',
+            error
+          );
+
+          if (
+            error.response?.status ===
+            401
+          ) {
+            localStorage.removeItem(
+              'userId'
+            );
+
+            localStorage.removeItem(
+              'userEmail'
+            );
+
+            localStorage.removeItem(
+              'userName'
+            );
+
+            localStorage.removeItem(
+              'token'
+            );
+
+            localStorage.removeItem(
+              'userPreferences'
+            );
+
+            localStorage.removeItem(
+              'customUserId'
+            );
+
+            navigate('/login', {
+              replace: true
+            });
+
+            return;
+          }
+
+          setError(
+            error.response?.data?.message ||
+            error.message ||
+            'Failed to load profile'
+          );
+        } finally {
+          setLoading(false);
         }
-
-        setUser(profile);
-
-        localStorage.setItem(
-          'userName',
-          profile.name || ''
-        );
-
-        localStorage.setItem(
-          'userEmail',
-          profile.email || ''
-        );
-      } catch (error) {
-        console.error(
-          'Failed to load profile:',
-          error
-        );
-
-        if (
-          error.response?.status ===
-          401
-        ) {
-          localStorage.removeItem(
-            'userId'
-          );
-          localStorage.removeItem(
-            'userEmail'
-          );
-          localStorage.removeItem(
-            'userName'
-          );
-          localStorage.removeItem(
-            'token'
-          );
-          localStorage.removeItem(
-            'userPreferences'
-          );
-
-          navigate('/login', {
-            replace: true
-          });
-
-          return;
-        }
-
-        setError(
-          error.response?.data?.message ||
-          error.message ||
-          'Failed to load profile'
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
     fetchProfile();
   }, [navigate]);
 
-  const handleFileSelect = (event) => {
+  const handleCopyUserId =
+    async () => {
+      if (!user?.userId) {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(
+          user.userId
+        );
+
+        setCopied(true);
+
+        setTimeout(() => {
+          setCopied(false);
+        }, 1500);
+      } catch (error) {
+        console.error(
+          'Failed to copy user ID:',
+          error
+        );
+      }
+    };
+
+  const handleSaveUserId =
+    async () => {
+      const cleanUserId =
+        newUserId
+          .trim()
+          .toLowerCase();
+
+      if (!cleanUserId) {
+        setError(
+          'User ID cannot be empty'
+        );
+
+        return;
+      }
+
+      if (
+        cleanUserId.length <
+          4 ||
+        cleanUserId.length >
+          30
+      ) {
+        setError(
+          'User ID must be between 4 and 30 characters'
+        );
+
+        return;
+      }
+
+      if (
+        !/^[a-z0-9_]+$/.test(
+          cleanUserId
+        )
+      ) {
+        setError(
+          'User ID can contain only letters, numbers and underscore'
+        );
+
+        return;
+      }
+
+      try {
+        setSavingUserId(true);
+        setError('');
+
+        const currentUserId =
+          localStorage.getItem(
+            'userId'
+          );
+
+        const response =
+          await api.put(
+            `/auth/profile/${encodeURIComponent(
+              currentUserId
+            )}`,
+            {
+              userId:
+                cleanUserId
+            }
+          );
+
+        const updatedProfile =
+          response.data?.user ||
+          response.data;
+
+        setUser(
+          updatedProfile || {
+            ...user,
+            userId:
+              cleanUserId
+          }
+        );
+
+        setNewUserId(
+          cleanUserId
+        );
+
+        localStorage.setItem(
+          'customUserId',
+          cleanUserId
+        );
+
+        setEditingUserId(false);
+
+        window.dispatchEvent(
+          new Event('profile-updated')
+        );
+      } catch (error) {
+        console.error(
+          'Failed to update User ID:',
+          error
+        );
+
+        setError(
+          error.response?.data?.message ||
+          error.message ||
+          'Failed to update User ID'
+        );
+      } finally {
+        setSavingUserId(false);
+      }
+    };
+
+  const handleFileSelect = (
+    event
+  ) => {
     const file =
       event.target.files?.[0];
 
@@ -154,6 +317,7 @@ function Profile() {
       );
 
       event.target.value = '';
+
       return;
     }
 
@@ -166,6 +330,7 @@ function Profile() {
       );
 
       event.target.value = '';
+
       return;
     }
 
@@ -213,13 +378,15 @@ function Profile() {
       const fullImageUrl =
         `${API_ORIGIN}${imageUrl}`;
 
-      const userId =
-        localStorage.getItem('userId');
+      const currentUserId =
+        localStorage.getItem(
+          'userId'
+        );
 
       const profileResponse =
         await api.put(
           `/auth/profile/${encodeURIComponent(
-            userId
+            currentUserId
           )}`,
           {
             profileImage:
@@ -267,61 +434,64 @@ function Profile() {
     }
   };
 
-  const handleRemoveImage = async () => {
-    try {
-      setUploading(true);
-      setError('');
+  const handleRemoveImage =
+    async () => {
+      try {
+        setUploading(true);
+        setError('');
 
-      const userId =
-        localStorage.getItem('userId');
+        const currentUserId =
+          localStorage.getItem(
+            'userId'
+          );
 
-      const response =
-        await api.put(
-          `/auth/profile/${encodeURIComponent(
-            userId
-          )}`,
-          {
+        const response =
+          await api.put(
+            `/auth/profile/${encodeURIComponent(
+              currentUserId
+            )}`,
+            {
+              profileImage: ''
+            }
+          );
+
+        const updatedProfile =
+          response.data?.user ||
+          response.data;
+
+        setUser(
+          updatedProfile || {
+            ...user,
             profileImage: ''
           }
         );
 
-      const updatedProfile =
-        response.data?.user ||
-        response.data;
+        setSelectedFile(null);
+        setPreviewUrl('');
 
-      setUser(
-        updatedProfile || {
-          ...user,
-          profileImage: ''
+        if (fileInputRef.current) {
+          fileInputRef.current.value =
+            '';
         }
-      );
 
-      setSelectedFile(null);
-      setPreviewUrl('');
+        window.dispatchEvent(
+          new Event('profile-updated')
+        );
+      } catch (error) {
+        console.error(
+          'Remove profile image error:',
+          error
+        );
 
-      if (fileInputRef.current) {
-        fileInputRef.current.value =
-          '';
+        setError(
+          error.response?.data?.message ||
+          error.message ||
+          'Failed to remove profile image'
+        );
+      } finally {
+        setUploading(false);
       }
-
-      window.dispatchEvent(
-        new Event('profile-updated')
-      );
-    } catch (error) {
-      console.error(
-        'Remove profile image error:',
-        error
-      );
-
-      setError(
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to remove profile image'
-      );
-    } finally {
-      setUploading(false);
-    }
-  };
+    };
 
   if (loading) {
     return (
@@ -340,6 +510,7 @@ function Profile() {
       <div className="min-h-screen bg-slate-100 py-10 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+
             <h2 className="text-xl font-bold text-slate-800">
               Unable to load profile
             </h2>
@@ -357,6 +528,7 @@ function Profile() {
             >
               Try Again
             </button>
+
           </div>
         </div>
       </div>
@@ -374,6 +546,7 @@ function Profile() {
 
   return (
     <div className="min-h-screen bg-slate-100 py-10 px-4">
+
       <div className="max-w-3xl mx-auto">
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -441,6 +614,7 @@ function Profile() {
               )}
 
             </div>
+
           </div>
 
           <div className="p-8">
@@ -450,6 +624,138 @@ function Profile() {
                 {error}
               </div>
             )}
+
+            <div className="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-4">
+
+              <div className="flex flex-col gap-4">
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+                  <div className="min-w-0">
+
+                    <p className="text-sm text-slate-500">
+                      User ID
+                    </p>
+
+                    {!editingUserId ? (
+                      <p className="mt-1 font-mono font-semibold text-slate-800 break-all">
+                        {user.userId ||
+                          'Not set'}
+                      </p>
+                    ) : (
+                      <input
+                        type="text"
+                        value={
+                          newUserId
+                        }
+                        onChange={(e) =>
+                          setNewUserId(
+                            e.target.value
+                              .toLowerCase()
+                              .replace(
+                                /[^a-z0-9_]/g,
+                                ''
+                              )
+                          )
+                        }
+                        maxLength={30}
+                        autoFocus
+                        placeholder="Enter User ID"
+                        className="mt-2 w-full sm:w-80 px-4 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    )}
+
+                  </div>
+
+                  {!editingUserId ? (
+                    <div className="flex flex-wrap gap-2">
+
+                      <button
+                        type="button"
+                        onClick={
+                          handleCopyUserId
+                        }
+                        className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-100"
+                      >
+                        {copied
+                          ? 'Copied ✓'
+                          : 'Copy ID'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewUserId(
+                            user.userId ||
+                              ''
+                          );
+
+                          setError('');
+
+                          setEditingUserId(
+                            true
+                          );
+                        }}
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
+                      >
+                        Edit ID
+                      </button>
+
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+
+                      <button
+                        type="button"
+                        onClick={
+                          handleSaveUserId
+                        }
+                        disabled={
+                          savingUserId
+                        }
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        {savingUserId
+                          ? 'Saving...'
+                          : 'Save ID'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewUserId(
+                            user.userId ||
+                              ''
+                          );
+
+                          setEditingUserId(
+                            false
+                          );
+
+                          setError('');
+                        }}
+                        disabled={
+                          savingUserId
+                        }
+                        className="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-300 disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+
+                    </div>
+                  )}
+
+                </div>
+
+                <p className="text-xs text-slate-500">
+                  4–30 characters. Use only
+                  letters, numbers and
+                  underscore.
+                </p>
+
+              </div>
+
+            </div>
 
             {selectedFile && (
               <div className="mb-6 bg-slate-50 border border-slate-200 rounded-xl p-4">
@@ -467,6 +773,7 @@ function Profile() {
                   />
 
                   <div className="flex-1 min-w-0">
+
                     <p className="font-medium text-slate-800 truncate">
                       {selectedFile.name}
                     </p>
@@ -478,6 +785,7 @@ function Profile() {
                       ).toFixed(2)}{' '}
                       MB
                     </p>
+
                   </div>
 
                 </div>
@@ -486,8 +794,12 @@ function Profile() {
 
                   <button
                     type="button"
-                    onClick={handleUpload}
-                    disabled={uploading}
+                    onClick={
+                      handleUpload
+                    }
+                    disabled={
+                      uploading
+                    }
                     className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50"
                   >
                     {uploading
@@ -498,7 +810,10 @@ function Profile() {
                   <button
                     type="button"
                     onClick={() => {
-                      setSelectedFile(null);
+                      setSelectedFile(
+                        null
+                      );
+
                       setPreviewUrl('');
 
                       if (
@@ -508,13 +823,16 @@ function Profile() {
                           '';
                       }
                     }}
-                    disabled={uploading}
+                    disabled={
+                      uploading
+                    }
                     className="bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-medium hover:bg-slate-300 disabled:opacity-50"
                   >
                     Cancel
                   </button>
 
                 </div>
+
               </div>
             )}
 
@@ -524,8 +842,12 @@ function Profile() {
 
                   <button
                     type="button"
-                    onClick={handleRemoveImage}
-                    disabled={uploading}
+                    onClick={
+                      handleRemoveImage
+                    }
+                    disabled={
+                      uploading
+                    }
                     className="text-red-600 text-sm font-medium hover:text-red-700 disabled:opacity-50"
                   >
                     {uploading
@@ -543,6 +865,7 @@ function Profile() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
               <div className="bg-slate-50 p-4 rounded-xl">
+
                 <p className="text-sm text-slate-500">
                   Target Area
                 </p>
@@ -551,20 +874,25 @@ function Profile() {
                   {user.targetArea ||
                     'Not set'}
                 </p>
+
               </div>
 
               <div className="bg-slate-50 p-4 rounded-xl">
+
                 <p className="text-sm text-slate-500">
                   Budget
                 </p>
 
                 <p className="font-semibold text-slate-800">
-                  ₹{user.budgetMin ?? 0} - ₹
-                  {user.budgetMax ?? 0}
+                  ₹{user.budgetMin ?? 0}
+                  {' - '}
+                  ₹{user.budgetMax ?? 0}
                 </p>
+
               </div>
 
               <div className="bg-slate-50 p-4 rounded-xl">
+
                 <p className="text-sm text-slate-500">
                   Sleep Schedule
                 </p>
@@ -573,9 +901,11 @@ function Profile() {
                   {user.sleepSchedule ||
                     'Not set'}
                 </p>
+
               </div>
 
               <div className="bg-slate-50 p-4 rounded-xl">
+
                 <p className="text-sm text-slate-500">
                   Food Preference
                 </p>
@@ -584,9 +914,11 @@ function Profile() {
                   {user.foodPref ||
                     'Not set'}
                 </p>
+
               </div>
 
               <div className="bg-slate-50 p-4 rounded-xl">
+
                 <p className="text-sm text-slate-500">
                   Smoking
                 </p>
@@ -595,16 +927,20 @@ function Profile() {
                   {user.smoking ||
                     'Not set'}
                 </p>
+
               </div>
 
               <div className="bg-slate-50 p-4 rounded-xl">
+
                 <p className="text-sm text-slate-500">
                   Cleanliness
                 </p>
 
                 <p className="font-semibold text-slate-800">
-                  {user.cleanliness ?? 0} / 5
+                  {user.cleanliness ?? 0}
+                  {' / 5'}
                 </p>
+
               </div>
 
             </div>

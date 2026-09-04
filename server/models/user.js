@@ -2,6 +2,17 @@ import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema(
   {
+    userId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
+      minlength: 4,
+      maxlength: 30,
+      match: /^[a-z0-9_]+$/
+    },
+
     name: {
       type: String,
       required: true,
@@ -179,6 +190,9 @@ userSchema.pre(
 );
 
 const User =
-  mongoose.model('User', userSchema);
+  mongoose.model(
+    'User',
+    userSchema
+  );
 
 export default User;
