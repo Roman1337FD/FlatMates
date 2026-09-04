@@ -134,26 +134,30 @@ function Login() {
     };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-indigo-50 flex items-center justify-center px-4 py-8 sm:py-10">
 
       <div className="w-full max-w-md">
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <div className="bg-white rounded-3xl shadow-sm border border-indigo-100 p-6 sm:p-8">
 
           <div className="text-center mb-8">
 
-            <h1 className="text-3xl font-bold text-slate-800">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-rose-100 to-indigo-100 border border-indigo-100 flex items-center justify-center text-2xl mb-4">
+              🏠
+            </div>
+
+            <h1 className="text-3xl font-extrabold text-slate-800">
               Welcome Back
             </h1>
 
-            <p className="text-slate-500 mt-2">
+            <p className="text-slate-500 mt-2 text-sm sm:text-base">
               Login to your FlatMate.GN account
             </p>
 
           </div>
 
           {error && (
-            <div className="mb-5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+            <div className="mb-5 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl text-sm">
               {error}
             </div>
           )}
@@ -169,7 +173,7 @@ function Login() {
 
               <label
                 htmlFor="identifier"
-                className="block text-sm font-medium text-slate-700 mb-2"
+                className="block text-sm font-semibold text-slate-700 mb-2"
               >
                 Email or User ID
               </label>
@@ -187,7 +191,7 @@ function Login() {
                 }
                 placeholder="Enter email or User ID"
                 autoComplete="username"
-                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700 placeholder:text-slate-400 transition-colors"
               />
 
             </div>
@@ -196,7 +200,7 @@ function Login() {
 
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-slate-700 mb-2"
+                className="block text-sm font-semibold text-slate-700 mb-2"
               >
                 Password
               </label>
@@ -220,7 +224,7 @@ function Login() {
                   }
                   placeholder="Enter password"
                   autoComplete="current-password"
-                  className="w-full px-4 py-3 pr-12 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-3 pr-12 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 text-slate-700 placeholder:text-slate-400 transition-colors"
                 />
 
                 <button
@@ -231,7 +235,7 @@ function Login() {
                         !prev
                     )
                   }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 flex items-center justify-center transition-colors"
                   title={
                     showPassword
                       ? 'Hide password'
@@ -251,7 +255,7 @@ function Login() {
 
               <Link
                 to="/forgot-password"
-                className="text-sm text-indigo-600 font-medium hover:text-indigo-700"
+                className="text-sm text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
               >
                 Forgot Password?
               </Link>
@@ -261,7 +265,7 @@ function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              className="w-full bg-indigo-500 text-white py-3 rounded-xl font-semibold hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             >
               {loading
                 ? 'Logging in...'
@@ -270,7 +274,21 @@ function Login() {
 
           </form>
 
-          <div className="text-center mt-6">
+          <div className="relative my-7">
+
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-100"></div>
+            </div>
+
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-xs text-slate-400">
+                NEW TO FLATMATE.GN?
+              </span>
+            </div>
+
+          </div>
+
+          <div className="text-center">
 
             <p className="text-sm text-slate-500">
 
@@ -278,7 +296,7 @@ function Login() {
 
               <Link
                 to="/register"
-                className="text-indigo-600 font-semibold hover:text-indigo-700"
+                className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
               >
                 Register
               </Link>
