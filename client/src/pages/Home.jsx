@@ -9,7 +9,7 @@ function Home() {
         <div className="max-w-4xl mx-auto text-center">
 
           <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs sm:text-sm font-bold px-3.5 py-2 rounded-full uppercase tracking-wide">
-            📍 Hyperlocal for Greater Noida
+            Hyperlocal for Greater Noida
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-800 leading-tight mt-5">
@@ -47,9 +47,7 @@ function Home() {
 
           <div className="bg-white border border-rose-100 rounded-2xl p-6 shadow-sm">
 
-            <div className="w-11 h-11 rounded-xl bg-rose-50 flex items-center justify-center text-xl mb-4">
-              🎯
-            </div>
+            
 
             <h3 className="text-lg font-bold text-slate-800">
               Better Matches
@@ -63,9 +61,7 @@ function Home() {
 
           <div className="bg-white border border-indigo-100 rounded-2xl p-6 shadow-sm">
 
-            <div className="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center text-xl mb-4">
-              🤝
-            </div>
+            
 
             <h3 className="text-lg font-bold text-slate-800">
               Connect Easily
@@ -79,9 +75,7 @@ function Home() {
 
           <div className="bg-white border border-pink-100 rounded-2xl p-6 shadow-sm">
 
-            <div className="w-11 h-11 rounded-xl bg-pink-50 flex items-center justify-center text-xl mb-4">
-              🏠
-            </div>
+            
 
             <h3 className="text-lg font-bold text-slate-800">
               Made for Greater Noida

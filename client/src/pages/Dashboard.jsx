@@ -235,7 +235,7 @@ function Dashboard() {
                   </div>
 
                   <p className="text-indigo-900/80 text-sm font-medium">
-                    Welcome back 👋
+                    Welcome back 
                   </p>
 
                   <h1 className="text-2xl sm:text-4xl font-extrabold mt-1 text-slate-800 truncate">
@@ -274,9 +274,7 @@ function Dashboard() {
 
                     </div>
 
-                    <div className="w-11 h-11 rounded-2xl bg-white/50 border border-white/60 flex items-center justify-center text-xl">
-                      ✨
-                    </div>
+                    
 
                   </div>
 

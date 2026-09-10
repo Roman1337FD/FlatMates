@@ -587,9 +587,7 @@ function Navbar() {
                   }`}
                 >
 
-                  <span className="text-base">
-                    💬
-                  </span>
+                 
 
                   <span className="hidden md:inline">
                     Messages
@@ -612,11 +610,11 @@ function Navbar() {
                           !prev
                       )
                     }
-                    className="relative w-10 h-10 rounded-xl hover:bg-indigo-50 flex items-center justify-center text-lg transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors"
                     aria-label="Notifications"
                   >
 
-                    🔔
+                    Notification
 
                     {unreadCount >
                       0 && (

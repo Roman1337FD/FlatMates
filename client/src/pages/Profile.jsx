@@ -580,9 +580,7 @@ function Profile() {
 
         <div className="max-w-md w-full bg-white rounded-3xl border border-rose-100 shadow-sm p-8 text-center">
 
-          <div className="text-3xl mb-3">
-            ⚠️
-          </div>
+          
 
           <h2 className="text-xl font-bold text-slate-800">
             Unable to load profile
