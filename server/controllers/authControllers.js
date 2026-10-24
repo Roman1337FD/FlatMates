@@ -63,7 +63,7 @@ const createUniqueUserId = async (
       await User.exists({
         userId
       });
-  }
+    }
 
   return userId;
 };
