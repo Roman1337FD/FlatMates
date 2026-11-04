@@ -1,0 +1,24 @@
+{
+  "name": "flatmates",
+  "version": "1.0.0",
+  "description": "FlatMate.GN is a full-stack web application designed to help students and professionals in Greater Noida find compatible flatmates based on lifestyle, budget, daily habits, and personal preferences.",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Roman1337FD/FlatMates.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Roman1337FD/FlatMates/issues"
+  },
+  "homepage": "https://github.com/Roman1337FD/FlatMates#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6"
+  },
+  "dependencies": {
+    "build": "^0.1.4"
+  }
+}
